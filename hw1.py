@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+np.random.seed(50)
 
 # Problem 2
 means = []
@@ -20,11 +21,26 @@ for n in sizes:
     means.append(mean)
     vars.append(var)
 
+# True values
+mean_true = 0
+var_true = .49983
+
+# Errors
+mean_err = [abs(mean - mean_true) for mean in means]
+var_err = [abs(var - var_true) for var in vars]
+
+print("The mean error is", mean_err)
+print("The variance error is", var_err)
+
+plt.loglog([10**x for x in sizes], mean_err,)
+plt.loglog([10**x for x in sizes], var_err,)
+plt.legend(["mean", 'variance'])
+
 print("The means are: ", means)
 print("The variances are: ", vars)
 
 # Problem 3 (Will need to pull this into another file for later homeworks)
-def T_s(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
+def T_s(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
     gamma = np.sqrt(2*(a+b)*h/(a*b*k))
     c1 = (-phi/(k*gamma)) * (np.exp(gamma*L)*(h + k*gamma)) / (np.exp(-gamma*L)*(h + k*gamma) + np.exp(gamma*L)*(h + k*gamma))
     c2 = phi/(k*gamma) + c1
@@ -32,7 +48,7 @@ def T_s(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
 
     return T_s
 
-def dTs_dh(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
+def dTs_dh(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
     dh = (
         (2**(1/2)*phi*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
          - 2**(1/2)*phi*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2)) 
@@ -49,7 +65,7 @@ def dTs_dh(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
     )
     return dh
 
-def dTs_dk(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
+def dTs_dk(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
     dk = (
         -(2**(1/2)*phi*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2)) 
           - 2**(1/2)*phi*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
@@ -66,7 +82,7 @@ def dTs_dk(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
     )
     return dk
 
-def dTs_dphi(x, h, k, phi, T_amb, a=0.095, b=0.095, L=0.7):
+def dTs_dphi(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
     dphi = (
         -(2**(1/2)*(np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
         - np.exp(2*2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2))))/(2*k*(np.exp(2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2)) 
@@ -115,7 +131,8 @@ ax.axis('tight')
 ax.axis('off')
 
 # Create table
-table = ax.table(cellText=df.round(4).values, colLabels=col_labels, loc='center')
+formatted_values = df.map(lambda x: f"{x:.5g}").values
+table = ax.table(cellText=formatted_values, colLabels=col_labels, loc='center')
 
 # styling manually
 table.auto_set_font_size(False)
@@ -123,3 +140,5 @@ table.set_fontsize(10)
 table.scale(1.2, 1.2)
 
 plt.show()
+
+print("Script Finished!")
