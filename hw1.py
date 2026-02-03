@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sympy import symbols, diff, sin, exp, sqrt
 
 np.random.seed(50)
 
@@ -40,80 +41,58 @@ print("The means are: ", means)
 print("The variances are: ", vars)
 
 # Problem 3 (Will need to pull this into another file for later homeworks)
-def T_s(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
-    gamma = np.sqrt(2*(a+b)*h/(a*b*k))
-    c1 = (-phi/(k*gamma)) * (np.exp(gamma*L)*(h + k*gamma)) / (np.exp(-gamma*L)*(h + k*gamma) + np.exp(gamma*L)*(h + k*gamma))
-    c2 = phi/(k*gamma) + c1
-    T_s = c1*np.exp(-gamma*x) + c2*np.exp(gamma*x) + T_amb
+# Set up the heat equation
+a, b, h, k, x, Tamb, phi, L = symbols('a b h k x Tamb phi L')
+gamma = sqrt((2*(a+b)*h) / (a*b*k))
+top = exp(gamma*L)*(h+k*gamma)
+bottom = exp(-gamma*L)*(h-k*gamma) + exp(gamma*L)*(h+k*gamma)
+c1 = -(phi / (k*gamma)) * (top / bottom)
+c2 = (phi / (k*gamma)) + c1
 
-    return T_s
+Ts = c1*exp(-gamma*x) + c2*exp(gamma*x) + Tamb
+dTs_dh = diff(Ts, h)
+dTs_dk = diff(Ts, k)
+dTs_dphi = diff(Ts, phi)
 
-def dTs_dh(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
-    dh = (
-        (2**(1/2)*phi*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
-         - 2**(1/2)*phi*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2)) 
-         + 2**(1/2)*phi*np.exp(4*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
-         - 2**(1/2)*phi*np.exp(2*2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2)) 
-         + 2*phi*x*np.exp(2*2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-         - 4*L*phi*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-         - 4*L*phi*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-         + 2*phi*x*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-         + 2*phi*x*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-         + 2*phi*x*np.exp(4*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2))/(4*h*k*(np.exp(2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2)) 
-         + 2*np.exp(2**(1/2)*(2*L + x)*((h*(a + b))/(a*b*k))**(1/2)) 
-         + np.exp(2**(1/2)*(4*L + x)*((h*(a + b))/(a*b*k))**(1/2)))*((h*(a + b))/(a*b*k))**(1/2))
-    )
-    return dh
-
-def dTs_dk(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
-    dk = (
-        -(2**(1/2)*phi*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2)) 
-          - 2**(1/2)*phi*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
-          - 2**(1/2)*phi*np.exp(4*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
-          + 2**(1/2)*phi*np.exp(2*2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2)) 
-          + 2*phi*x*np.exp(2*2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-          - 4*L*phi*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-          - 4*L*phi*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-          + 2*phi*x*np.exp(2*2**(1/2)*(L + x)*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-          + 2*phi*x*np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2) 
-          + 2*phi*x*np.exp(4*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2))*((h*(a + b))/(a*b*k))**(1/2))/(4*k**2*(np.exp(2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2)) 
-          + 2*np.exp(2**(1/2)*(2*L + x)*((h*(a + b))/(a*b*k))**(1/2)) 
-          + np.exp(2**(1/2)*(4*L + x)*((h*(a + b))/(a*b*k))**(1/2)))*((h*(a + b))/(a*b*k))**(1/2))
-    )
-    return dk
-
-def dTs_dphi(x, h, k, phi, T_amb, a=0.0095, b=0.0095, L=0.7):
-    dphi = (
-        -(2**(1/2)*(np.exp(2*2**(1/2)*L*((h*(a + b))/(a*b*k))**(1/2)) 
-        - np.exp(2*2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2))))/(2*k*(np.exp(2**(1/2)*x*((h*(a + b))/(a*b*k))**(1/2)) 
-        + np.exp(2**(1/2)*(2*L + x)*((h*(a + b))/(a*b*k))**(1/2)))*((h*(a + b))/(a*b*k))**(1/2))
-    )
-    return dphi
-
+# Test points
 x0 = 0.1 # m
 dx = 0.04 # m
 xj = [x0 + (j-1)*dx for j in range(1, 16)]
 
 # Parameters
-h = 20 # W / (m2 * C)
-k = 237 # W / (m * C)
-phi = -180000 # W / m2
-T_amb = 21 # deg C
+h_pass = 20 # W / (m2 * C)
+k_pass = 237 # W / (m * C)
+phi_pass = -180000 # W / m2
+Tamb_pass = 21 # deg C
+a_pass = 0.0095 # m
+b_pass = 0.0095 # m
+L_pass = 0.7 # m
 
 Ts_vals = []
 dh_vals = []
 dk_vals = []
 dphi_vals = []
 
-for x in xj:
-    Ts = T_s(x, h, k, phi, T_amb)
-    dh = dTs_dh(x, h, k, phi, T_amb)
-    dk = dTs_dk(x, h, k, phi, T_amb)
-    dphi = dTs_dphi(x, h, k, phi, T_amb)
-    Ts_vals.append(Ts)
-    dh_vals.append(dh)
-    dk_vals.append(dk)
-    dphi_vals.append(dphi)
+for x_pass in xj:
+    # Construct dictionary
+    values = {
+        a: a_pass,
+        b: b_pass, 
+        h: h_pass,
+        k: k_pass,
+        phi: phi_pass,
+        Tamb: Tamb_pass,
+        x: x_pass,
+        L: L_pass,
+    }
+    Ts_i = Ts.subs(values).evalf()
+    dh_i = dTs_dh.subs(values).evalf()
+    dk_i = dTs_dk.subs(values).evalf()
+    dphi_i = dTs_dphi.subs(values).evalf()
+    Ts_vals.append(Ts_i)
+    dh_vals.append(dh_i)
+    dk_vals.append(dk_i)
+    dphi_vals.append(dphi_i)
 
 cols = ['x', 'ts', 'dh', 'dk', 'dphi']
 col_labels = ['x (m)', 'Ts (C)', 'dTs/dh (m2*C2 / W)', 'dTs/dk (m*C2 / W)', 'dTs/dphi (m2*C / W)']
@@ -139,6 +118,7 @@ table.auto_set_font_size(False)
 table.set_fontsize(10)
 table.scale(1.2, 1.2)
 
+plt.tight_layout()
 plt.show()
 
 print("Script Finished!")
