@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 
 np.random.seed(530)
 
+
 ########## Problem 1 ##########
-def C(x, y, L): 
-    return (1/(2*L))*np.exp(-abs(x - y)/L)
+def C(x, y, L):
+    return (1 / (2 * L)) * np.exp(-abs(x - y) / L)
+
 
 y = np.linspace(-100, 100, 10000)
 L_set = [0.1, 10, 100, 10000]
@@ -21,7 +23,7 @@ fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10, 8), sharex=True)
 
 # 3. Iterate over data and flat axes simultaneously
 for ax, y_series, i in zip(axes.flat, results, range(4)):
-    ax.plot(y, y_series, color='tab:blue')
+    ax.plot(y, y_series, color="tab:blue")
     ax.set_title(f"L = {L_set[i]}")
     ax.set_xlabel("y")
     ax.set_ylabel("C(0, y)")
@@ -33,18 +35,19 @@ plt.tight_layout()
 
 ########## Problem 2 ##########
 # 2.1
-CMat = np.zeros((101, 101)) # Autocorrelation
-x = [-1 + (i-1)*0.02 for i in range(1, 102)]
+CMat = np.zeros((101, 101))  # Autocorrelation
+x = [-1 + (i - 1) * 0.02 for i in range(1, 102)]
+x_gauss = [-1 + (i - 1) * 0.02 for i in range(1, 204)]
 
 # Construct Covariance Matrix
 for i in range(1, 102):
-    xi = -1 + (i-1)*0.02
+    xi = -1 + (i - 1) * 0.02
     for j in range(1, 102):
-        xj = -1 + (j-1)*0.02
-        CMat[i-1, j-1] = C(xi, xj, 1)
+        xj = -1 + (j - 1) * 0.02
+        CMat[i - 1, j - 1] = C(xi, xj, 1)
 
 # Construct means
-alpha_bar = [np.cos(np.pi*(-1 + (i-1)*0.02)) for i in range(1, 102)]
+alpha_bar = [np.cos(np.pi * (-1 + (i - 1) * 0.02)) for i in range(1, 102)]
 
 ans_21 = np.random.multivariate_normal(alpha_bar, np.sqrt(CMat), 5)
 
@@ -58,25 +61,36 @@ fig, ax = plt.subplots()
 
 ax.plot(x, np.transpose(ans_21))
 
-ax.set_xlabel('Time (s)')
-ax.set_ylabel('Amplitude')
-ax.legend([f'Realization {i+1}' for i in range(5)]) 
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Amplitude")
+ax.legend([f"Realization {i+1}" for i in range(5)])
 ax.grid(True)
 
 # Plot 2.2
 fig, ax = plt.subplots()
-ax.plot(x, alpha_bar, label='True mean')
+ax.plot(x, alpha_bar, label="True mean")
 ax.plot(x, means_22, label="Emperical mean")
-ax.plot(x, alpha_bar+3*np.sqrt(np.diag(CMat)), label=f"3 Sigma") # TODO: Clean up the legend and label axes
-ax.plot(x, alpha_bar-3*np.sqrt(np.diag(CMat)), label=f"3 Sigma")
-ax.plot(x, means_22+3*np.sqrt(vars_22), label="3 STD")
-ax.plot(x, means_22-3*np.sqrt(vars_22), label="3 STD")
+ax.plot(
+    x, alpha_bar + 3 * np.sqrt(np.diag(CMat)), label=f"3 Sigma"
+)  # TODO: Clean up the legend and label axes
+ax.plot(x, alpha_bar - 3 * np.sqrt(np.diag(CMat)), label=f"3 Sigma")
+ax.plot(x, means_22 + 3 * np.sqrt(vars_22), label="3 STD")
+ax.plot(x, means_22 - 3 * np.sqrt(vars_22), label="3 STD")
 ax.legend()
 ax.grid(True)
 
 # Plot 2.3
-
-
+fig, ax = plt.subplots()
+ax.hist(data_22[:, 50], density=True)
+ax.plot(
+    x_gauss,
+    [
+        1
+        / (np.sqrt(2 * np.pi * CMat[50, 50]))
+        * np.exp(-((xi - alpha_bar[50]) ** 2) / (2 * CMat[50, 50]))
+        for xi in x_gauss
+    ],
+)
 
 ########## Problem 3 ##########
 
