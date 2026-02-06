@@ -32,6 +32,7 @@ for ax, y_series, i in zip(axes.flat, results, range(4)):
 
 # 4. Auto-adjust spacing to prevent label overlap
 plt.tight_layout()
+plt.suptitle("Comparison of L-value")
 
 
 ########## Problem 2 ##########
@@ -63,27 +64,31 @@ fig, ax = plt.subplots()
 
 ax.plot(x, np.transpose(ans_21))
 
-ax.set_xlabel("Time (s)")
-ax.set_ylabel("Amplitude")
+ax.set_xlabel("x (m)")
+ax.set_ylabel(r"$\alpha(x)$")
 ax.legend([f"Realization {i+1}" for i in range(5)])
 ax.grid(True)
+ax.set_title("Comparison of Realizations")
 
 # Plot 2.2
 fig, ax = plt.subplots()
 ax.plot(x, alpha_bar, label="True mean")
 ax.plot(x, means_22, label="Emperical mean")
 ax.plot(
-    x, alpha_bar + 3 * np.sqrt(np.diag(CMat)), label=f"3 Sigma"
+    x, alpha_bar + 3 * np.sqrt(np.diag(CMat)), 'y-', label=r"Analytical $3 \sigma$"
 )  # TODO: Clean up the legend and label axes
-ax.plot(x, alpha_bar - 3 * np.sqrt(np.diag(CMat)), label=f"3 Sigma")
-ax.plot(x, means_22 + 3 * np.sqrt(vars_22), label="3 STD")
-ax.plot(x, means_22 - 3 * np.sqrt(vars_22), label="3 STD")
+ax.plot(x, alpha_bar - 3 * np.sqrt(np.diag(CMat)), 'y-')
+ax.plot(x, means_22 + 3 * np.sqrt(vars_22), 'r-', label=r"Empirical $3 \sigma$")
+ax.plot(x, means_22 - 3 * np.sqrt(vars_22), 'r-')
 ax.legend()
 ax.grid(True)
+ax.set_xlabel("x (m)")
+ax.set_ylabel(r'$\alpha(x_i)$')
+ax.set_title("Comparison of mean")
 
 # Plot 2.3
 fig, ax = plt.subplots()
-ax.hist(data_22[:, 50], density=True)
+ax.hist(data_22[:, 50], density=True, label="Emperical Density")
 ax.plot(
     x_gauss,
     [
@@ -92,7 +97,12 @@ ax.plot(
         * np.exp(-((xi - alpha_bar[50]) ** 2) / (2 * CMat[50, 50]))
         for xi in x_gauss
     ],
+    label="Expected Gaussian"
 )
+ax.set_xlabel(r"$\alpha(x_{51})$")
+ax.set_ylabel("Frequency")
+ax.set_title('Empirical vs Expected Density')
+ax.legend()
 
 ########## Problem 3 ##########
 # Load the Eta values
@@ -125,8 +135,6 @@ def alpha_n(n, L, x):
         x = np.array(x)
     a = np.sqrt(lambda_n(n, L))*phi_n(n, L, x)
     return a
-
-# print(alpha_n(3, 1, x)) # works for now
 
 # 3.1 
 num = 11
@@ -173,20 +181,28 @@ for i in range(np.size(Q_35, 0)):
     ans_35[:, i] = a
 
 means_35 = np.mean(ans_35, 1)
-vars_35 = np.mean(ans_35, 1)
+vars_35 = np.var(ans_35, 1, ddof=1)
 
 # 3.6 (rework of 2.3)
 # Just plotting
 
-
 # Plot 3.1
 fig, ax = plt.subplots()
-ax.plot(eigenvalues, '-x')
+ax.plot(range(1, 12), eigenvalues, '-x')
 ax.set_yscale('log')
+ax.set_xlabel('Eigenvalue')
+ax.set_ylabel('Magnitude')
+ax.legend(['L=0.1', 'L=1', 'L=10', 'L=100'])
+ax.set_title('Eigenvalues for various L-values')
+
 
 # Plot 3.2
 fig, ax = plt.subplots()
-ax.plot(aN) # Check mean different from andrea
+ax.plot(x, aN) # Check mean different from andrea
+ax.set_xlabel('x (m)')
+ax.set_ylabel(r'$\alpha(x_i)$')
+ax.set_title('Comparison of L-value')
+ax.legend(['N=2', 'N=10', 'N=50', 'N=100'])
 
 # Plot 3.3
 fig, axes = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
@@ -198,20 +214,32 @@ for i in range(4):
     # Iterate through the 5 series in the third dimension
     for j in range(5):
         # data[:, i, j] extracts all n elements for subplot i, series j
-        ax.plot(ans_33[:, i, j], label=f'Q({j+1})')
+        ax.plot(x, ans_33[:, i, j], label=f'Q({j+1})')
     
     ax.set_title(f'N = {Ns[i]}')
-    ax.set_ylabel('Value')
+    ax.set_ylabel('T')
+    ax.set_xlabel('x')
     ax.legend(loc='upper right', fontsize='small', ncol=5)
+    plt.suptitle("Comparison of realizations")
+
+
 
 # Plot 3.5
 fig, ax = plt.subplots()
-ax.plot(x, means_35)
-# TODO: Plot bounds
+ax.plot(x, means_35, 'b-', label='Empirical Mean')
+ax.plot(x, means_35 + 3*np.sqrt(vars_35), 'r-', label=r'Empirical $3\sigma$')
+ax.plot(x, means_35 - 3*np.sqrt(vars_35), 'r-')
+ax.plot(x, alpha_bar + 3 * np.sqrt(np.diag(CMat)), 'y-', label=r'Analytical $3\sigma$')
+ax.plot(x, alpha_bar - 3 * np.sqrt(np.diag(CMat)), 'y-')
+ax.plot(x, alpha_bar, 'g-', label="True mean")
+ax.set_xlabel('x')
+ax.set_ylabel(r'$\alpha(x_i)$')
+ax.set_title('Comparision of means')
+ax.legend()
 
 # Plot 3.6
 fig, ax = plt.subplots()
-ax.hist(ans_35[50, :], density=True)
+ax.hist(ans_35[50, :], density=True, label='Empirical Density')
 ax.plot(
     x_gauss,
     [
@@ -219,8 +247,12 @@ ax.plot(
         / (np.sqrt(2 * np.pi * CMat[50, 50]))
         * np.exp(-((xi - alpha_bar[50]) ** 2) / (2 * CMat[50, 50]))
         for xi in x_gauss
-    ],
+    ], label='Expected Gaussian'
 )
+ax.set_ylabel('Frequency')
+ax.set_xlabel(r'$\alpha$')
+ax.legend()
+ax.set_title(r"Distribution of $\alpha(x_{51})$ over 500 realizations")
 
 
 plt.show()
