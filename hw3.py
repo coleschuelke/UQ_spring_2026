@@ -141,7 +141,7 @@ num = 11
 eigenvalues = np.zeros((num, 4))
 for n in range(num):
     for i, lval in enumerate(L_vals):
-        eigenvalues[n, i-1] = lambda_n(n, lval)
+        eigenvalues[n, i] = lambda_n(n, lval)
 
 # 3.2
 Q = np.random.normal(0, 1, 100)
@@ -193,7 +193,7 @@ ax.set_yscale('log')
 ax.set_xlabel('Eigenvalue')
 ax.set_ylabel('Magnitude')
 ax.legend(['L=0.1', 'L=1', 'L=10', 'L=100'])
-ax.set_title('Eigenvalues for various L-values')
+ax.set_title('Eigenvalue as a function of L-value')
 
 
 # Plot 3.2
@@ -217,8 +217,8 @@ for i in range(4):
         ax.plot(x, ans_33[:, i, j], label=f'Q({j+1})')
     
     ax.set_title(f'N = {Ns[i]}')
-    ax.set_ylabel('T')
-    ax.set_xlabel('x')
+    ax.set_ylabel(r'$\alpha(x_i)$')
+    ax.set_xlabel('x (m)')
     ax.legend(loc='upper right', fontsize='small', ncol=5)
     plt.suptitle("Comparison of realizations")
 
@@ -232,7 +232,7 @@ ax.plot(x, means_35 - 3*np.sqrt(vars_35), 'r-')
 ax.plot(x, alpha_bar + 3 * np.sqrt(np.diag(CMat)), 'y-', label=r'Analytical $3\sigma$')
 ax.plot(x, alpha_bar - 3 * np.sqrt(np.diag(CMat)), 'y-')
 ax.plot(x, alpha_bar, 'g-', label="True mean")
-ax.set_xlabel('x')
+ax.set_xlabel('x (m)')
 ax.set_ylabel(r'$\alpha(x_i)$')
 ax.set_title('Comparision of means')
 ax.legend()
