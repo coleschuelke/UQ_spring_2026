@@ -12,22 +12,22 @@ X = np.zeros((len(t), 2))
 X[:, 0] = np.ones(len(t))
 X[:, 1] = np.exp(t)
 
-q = np.transpose(np.array([10, 1]))
+n, p = X.shape
+
+q = np.transpose(np.array([10, 1])) # True values
 
 eps = np.random.uniform(-1, 1, len(t))
-
 ups = np.matmul(X, q) + eps
 
 # Estimate qois 
 q_hat_ls = la.solve(X.T@X, X.T@ups)
-
-q_var = (1/ (len(t) - 1)) * (ups - X@q_hat_ls).T@(ups - X@q_hat_ls)
+q_var = (1/ (n-p)) * (ups - X@q_hat_ls).T@(ups - X@q_hat_ls)
 
 xtxinv = la.inv(X.T@X)
 xtxinv_diag = np.diag(xtxinv)
 
-q1_ci_lo, q1_ci_hi = stats.t.interval(0.95, len(t), loc=q_hat_ls[0], scale=np.sqrt(q_var*xtxinv_diag[0]))
-q2_ci_lo, q2_ci_hi = stats.t.interval(0.95, len(t), loc=q_hat_ls[1], scale=np.sqrt(q_var*xtxinv_diag[1]))
+q1_ci_lo, q1_ci_hi = stats.t.interval(0.95, df=n-p, loc=q_hat_ls[0], scale=np.sqrt(q_var*xtxinv_diag[0]))
+q2_ci_lo, q2_ci_hi = stats.t.interval(0.95, df=n-p, loc=q_hat_ls[1], scale=np.sqrt(q_var*xtxinv_diag[1]))
 
 print(q_hat_ls)
 print(q_var)
