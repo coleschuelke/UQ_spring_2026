@@ -48,8 +48,8 @@ top = exp(gamma*L)*(h+k*gamma)
 bottom = exp(-gamma*L)*(h-k*gamma) + exp(gamma*L)*(h+k*gamma)
 c1 = -(phi / (k*gamma)) * (top / bottom)
 c2 = (phi / (k*gamma)) + c1
-
 Ts = c1*exp(-gamma*x) + c2*exp(gamma*x) + Tamb
+
 dTs_dh = diff(Ts, h)
 dTs_dk = diff(Ts, k)
 dTs_dphi = diff(Ts, phi)

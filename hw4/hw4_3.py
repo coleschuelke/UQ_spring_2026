@@ -2,110 +2,59 @@ import scipy
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
-from sympy import symbols, diff, sin, exp, sqrt, lambdify
+from utils import HeatEquation
 
-
-data = scipy.io.loadmat('exercise_7p7_data')
-
-data = data['copper_data']
-
+# Import the data
+data = scipy.io.loadmat("exercise_7p7_data")
+data = data["copper_data"]
 df = pd.DataFrame(data)
-
 ups = np.array(df.iloc[:, 1])
 
-syms = symbols('a b h k x Tamb phi L')
-a, b, h, k, x, Tamb, phi, L = syms
-gamma = sqrt((2*(a+b)*h) / (a*b*k))
-top = exp(gamma*L)*(h+k*gamma)
-bottom = exp(-gamma*L)*(h-k*gamma) + exp(gamma*L)*(h+k*gamma)
-c1 = -(phi / (k*gamma)) * (top / bottom)
-c2 = (phi / (k*gamma)) + c1
-Ts = c1*exp(-gamma*x) + c2*exp(gamma*x) + Tamb
-
-dTs_dh = diff(Ts, h)
-dTs_dk = diff(Ts, k)
-dTs_dphi = diff(Ts, phi)
-
 # Test points
-x0 = 0.1 # m
-dx = 0.04 # m
-xj = [x0 + (j-1)*dx for j in range(1, 16)]
+x0 = 0.1  # m
+dx = 0.04  # m
+xj = np.array([x0 + (j - 1) * dx for j in range(1, 16)])
 
-# Parameters
-h_pass = 20 # W / (m2 * C)
-k_pass = 401 # W / (m * C)
-phi_pass = -180000 # W / m2
-Tamb_pass = 21.29 # deg C
-a_pass = 0.0095 # m
-b_pass = 0.0095 # m
-L_pass = 0.7 # m
+eq = HeatEquation()  # Make sure to configure this to use the proper parameters
 
 # Estimating q = [phi, h]
 
-def Ts_fun(q):
-    phi_guess = q[0]
-    h_guess = q[1]
 
-    x_vals = np.array([0.1 + k*0.04 for k in range(15)])
-
-    values = {
-        a: a_pass,
-        b: b_pass, 
-        h: h_guess,
-        k: k_pass,
-        Tamb: Tamb_pass,
-        phi: phi_guess,
-        L: L_pass,
+# Wrap heat equation methods appropriately
+def Ts_q(q):
+    q_dict = {
+        "phi": q[0],
+        "h": q[1],
     }
 
-    Ts_fun = lambdify(syms, Ts, 'numpy')
-    args = [x_vals if s == x else values[s] for s in syms]
-
-    return Ts_fun(*args)
+    return eq.Ts_vals(xj, q_dict)
 
 
 def cf(q):
-    
-    return ups - Ts_fun(q)
+
+    return ups - Ts_q(q)
+
 
 def jac(q):
-    phi_guess = q[0]
-    h_guess = q[1]
-
-    x_vals = np.array([0.1 + k*0.04 for k in range(15)])
-
-    values = {
-        a: a_pass,
-        b: b_pass, 
-        h: h_guess,
-        k: k_pass,
-        Tamb: Tamb_pass,
-        phi: phi_guess,
-        L: L_pass,
+    q_dict = {
+        "phi": q[0],
+        "h": q[1],
     }
-    
-    args = [x_vals if s == x else values[s] for s in syms]
 
-    dTs_dphi_fun = lambdify(syms, dTs_dphi, 'numpy')
-    dTs_dh_fun = lambdify(syms, dTs_dh, 'numpy')
+    return -1 * eq.Ts_jac(xj, ["phi", "h"], q_dict)
 
-    dTs_dphi_vals = dTs_dphi_fun(*args)
-    dTs_dh_vals = dTs_dh_fun(*args)
 
-    return np.transpose(np.array([-dTs_dphi_vals, -dTs_dh_vals]))
-
+# Initial guess
 x0 = [-100000, 10]
 
-q_hat  = scipy.optimize.least_squares(cf, x0, jac)
-
+q_hat = scipy.optimize.least_squares(cf, x0, jac)
 print(f"The point estimate of q is: {q_hat.x}")
 
 # Need 95% CI
 
 # Residual RMS calculation
-
 residuals = cf(q_hat.x)
-RMS = np.sqrt(residuals.T@residuals)
+RMS = np.sqrt(residuals.T @ residuals)
 print(f"The RMS of the residuals is: {RMS}")
 
 # Standard Deviation of Observations and sampling distribution
@@ -114,11 +63,11 @@ print(f"The RMS of the residuals is: {RMS}")
 # Plot of residuals and model fit
 fig, ax = plt.subplots()
 ax.scatter(range(len(residuals)), residuals)
-ax.hlines(0, -1, 15, 'r', '--')
+ax.hlines(0, -1, 15, "r", "--")
 
 fig, ax = plt.subplots()
-ax.plot(xj, Ts_fun(q_hat.x))
-ax.scatter(xj, ups, marker='o', c='r')
+ax.plot(xj, Ts_q(q_hat.x))
+ax.scatter(xj, ups, marker="o", c="r")
 
 
 plt.show()
