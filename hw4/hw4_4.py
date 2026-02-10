@@ -1,17 +1,7 @@
-import scipy
-import matplotlib.pylab as plt
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
 from sympy import symbols, diff, sin, exp, sqrt, lambdify
 
-
-data = scipy.io.loadmat('exercise_7p7_data')
-
-data = data['copper_data']
-
-df = pd.DataFrame(data)
-
-ups = np.array(df.iloc[:, 1])
 
 syms = symbols('a b h k x Tamb phi L')
 a, b, h, k, x, Tamb, phi, L = syms
@@ -40,8 +30,6 @@ a_pass = 0.0095 # m
 b_pass = 0.0095 # m
 L_pass = 0.7 # m
 
-# Estimating q = [phi, h]
-
 def Ts_fun(q):
     phi_guess = q[0]
     h_guess = q[1]
@@ -62,11 +50,6 @@ def Ts_fun(q):
     args = [x_vals if s == x else values[s] for s in syms]
 
     return Ts_fun(*args)
-
-
-def cf(q):
-    
-    return ups - Ts_fun(q)
 
 def jac(q):
     phi_guess = q[0]
@@ -94,31 +77,70 @@ def jac(q):
 
     return np.transpose(np.array([-dTs_dphi_vals, -dTs_dh_vals]))
 
-x0 = [-100000, 10]
+# Approximating with finite difference
 
-q_hat  = scipy.optimize.least_squares(cf, x0, jac)
+def num_der_phi(q, delta):
 
-print(f"The point estimate of q is: {q_hat.x}")
+    # Calculate the value of the function at the point here
+    Ts_vec = Ts_fun(q)
 
-# Need 95% CI
+    # Calculate the value of the function at phi+dphi, h
+    qdelta = q+np.array([0, delta])
+    Tsdelta_vec = Ts_fun(qdelta)
 
-# Residual RMS calculation
+    # Calculate finite difference
+    chi = (Tsdelta_vec - Ts_vec) / delta
 
-residuals = cf(q_hat.x)
-RMS = np.sqrt(residuals.T@residuals)
-print(f"The RMS of the residuals is: {RMS}")
+    return -chi
 
-# Standard Deviation of Observations and sampling distribution
+def num_der_h(q, delta):
+    # Calculate the value of the function at the point here
+    Ts_vec = Ts_fun(q)
+
+    # Calculate the value of the function at phi+dphi, h
+    qdelta = q+np.array([0, delta])
+    Tsdelta_vec = Ts_fun(qdelta)
+
+    # Calculate finite difference
+    chi = (Tsdelta_vec - Ts_vec) / delta
+
+    return -chi
 
 
-# Plot of residuals and model fit
+# Compute errors for all deltas 
+deltas = [10**-x for x in range(15, 0, -1)]
+phi_out = np.zeros((15, len(deltas)))
+h_out = np.zeros((15, len(deltas)))
+
+q_star = [-100000, 10]
+
+for i, d in enumerate(deltas):
+    num_phi = num_der_phi(q_star, d)
+    num_h = num_der_phi(q_star, d)
+
+    analytical = jac(q_star)
+
+    a_phi = analytical[:, 0]
+    a_h = analytical[:, 1]
+
+    err_phi = abs((num_phi - a_phi)/a_phi)
+    err_h = abs((num_h - a_h)/a_h)
+
+
+    phi_out[:, i] = err_phi # must be transposed prior to plotting
+    h_out[:, i] = err_h
+
+legend_strings = [f'delta={delta}' for delta in deltas]
+
 fig, ax = plt.subplots()
-ax.scatter(range(len(residuals)), residuals)
-ax.hlines(0, -1, 15, 'r', '--')
+ax.plot(deltas, np.transpose(phi_out))
+ax.set_yscale('log')
+ax.set_xscale('log')
+ax.legend(legend_strings, loc='right')
 
 fig, ax = plt.subplots()
-ax.plot(xj, Ts_fun(q_hat.x))
-ax.scatter(xj, ups, marker='o', c='r')
-
-
+ax.plot(deltas, np.transpose(phi_out))
+ax.set_yscale('log')
+ax.set_xscale('log')
+ax.legend(legend_strings, loc='right')
 plt.show()
