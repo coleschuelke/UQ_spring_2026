@@ -14,4 +14,4 @@ q = {
 
 print("analytic: \n", eq.Ts_jac(x_vals, ["phi", "h"], q))
 
-print("numerical: \n", eq.Ts_numder(x_vals, ["phi", "h"], q, 1e-6))
+print("numerical: \n", eq.Ts_numder(x_vals, ["phi", "h"], q, 1e2))
