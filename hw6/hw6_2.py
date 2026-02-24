@@ -83,46 +83,31 @@ def prop_rand(q, V):
 def ratio(q_star, qk, V):
     num = pi(q_star) * pi0(q_star) * prop_dist(qk, q_star, V)
     denom = pi(qk) * pi0(qk) * prop_dist(q_star, qk, V)
+    if debug:
+        print(f" Ratio: {num / denom}")
     return num / denom
 
 
-# Set up the actual problem
-M = 1_000
-mcmc_1k = MCMC(q0, prop_rand, ratio, D, M, 2012)
+# Set up the problem
 
-r_1k = mcmc_1k.metropolis_hastings()
-q_hist_1k = r_1k[0]
-qMAP_1k = 0  # TODO
+mcmc = MCMC(q0, prop_rand, ratio, D, 1_000, 2012)
 
-# mcmc_100k = MCMC(q0, prop_rand, ratio, D, 100_000, 2012)
+result = mcmc.adaptive_metropolis(
+    100,
+    2.38**2 / 2,
+    0,
+    D,
+)
+q_hist = result[0]
 
-# r_100k = mcmc_100k.metropolis_hastings()
-# q_hist_100k = r_100k[0]
-# qMAP_100k = 0  # TODO
-
-print(f"The MAP estimate with M=1_000 run is {qMAP_1k}")
-print(f"The acceptance ratio for the M=1_000 MCMC run was {r_1k[1]}")
-# print(f"The MAP estimate with M=100_000 run is {qMAP_100k}")
-# print(f"The acceptance ratio for the M=100_000 MCMC run was {r_100k[1]}")
-
-# KDE of the
+print(f"The acceptance ratio for the run was {result[1]}")
+print(f"The final variance was {result[2]}")
 
 # Plotting
 fig, ax = plt.subplots()
-ax.plot(q_hist_1k[0, :], q_hist_1k[1, :], color="b", marker="x")
+ax.plot(q_hist[0, :], q_hist[1, :], color="b", marker="x")
 ax.set_xlabel("Phi")
 ax.set_ylabel("h")
 ax.set_title("MCMC 1000 Steps")
-
-# fig, ax = plt.subplots()
-# ax.plot(q_hist_100k[0, :], q_hist_100k[1, :], color="b", marker="x")
-# ax.set_xlabel("Phi")
-# ax.set_ylabel("h")
-# ax.set_title("MCMC 100_000 Steps")
-
-# fig, axes = plt.subplots(2, 1)
-# for k in range(2):
-#     axes[k].hist(q_hist_100k[k, :], density=True)
-#     axes[k].set_title("Phi Density")
 
 plt.show()

@@ -5,14 +5,14 @@ from sympy import symbols, diff, sin, exp, sqrt, lambdify
 class HeatEquation:
     def __init__(
         self,
-        a=0.0095,
-        b=0.0095,
-        h=20,
-        k=401,
-        x=0.1,
-        Tamb=21.29,
-        phi=180000,
-        L=0.7,
+        a=0.0095,  # m
+        b=0.0095,  # m
+        h=20,  # W / (m2 * C)
+        k=401,  # W / (m * C)
+        x=0.1,  # m
+        Tamb=21.29,  # deg C
+        phi=180000,  # W / m2
+        L=0.7,  # m
     ):  # Default values for copper
 
         self.params = {  # Important that these are ordered the same as syms
