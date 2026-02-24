@@ -1,8 +1,10 @@
-import numpy as np
-from utils.markov_chain_monte_carlo import MCMC
-from utils.heat_equation import HeatEquation
-from scipy import io
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy
+from scipy import io
+
+from utils.heat_equation import HeatEquation
+from utils.markov_chain_monte_carlo import MCMC
 
 debug = 0
 
@@ -85,7 +87,7 @@ def ratio(q_star, qk, V):
     denom = pi(qk) * pi0(qk) * prop_dist(q_star, qk, V)
     if debug:
         print(f" Ratio: {num / denom}")
-    return num / denom
+    return (num / denom, num)
 
 
 # Set up the problem
@@ -98,16 +100,35 @@ result = mcmc.adaptive_metropolis(
     0,
     D,
 )
-q_hist = result[0]
 
-print(f"The acceptance ratio for the run was {result[1]}")
-print(f"The final variance was {result[2]}")
+np.savez(
+    "hw6_2_results.npz",
+    q_hist=result[0],
+    post_hist=result[1],
+    accr=result[2],
+    V=result[3],
+)
+# q_hist = result[0]
 
-# Plotting
-fig, ax = plt.subplots()
-ax.plot(q_hist[0, :], q_hist[1, :], color="b", marker="x")
-ax.set_xlabel("Phi")
-ax.set_ylabel("h")
-ax.set_title("MCMC 1000 Steps")
+# print(f"The acceptance ratio for the run was {result[2]}")
+# print(f"The final variance was {result[3]}")
+# print(f"The MAP estimate for the run was {q_hist[:, np.argmax(result[1])]}")
 
-plt.show()
+# # KDE of the data
+# kde_phi = scipy.stats.gaussian_kde(q_hist[0, :])
+
+# # Plotting
+# fig, ax = plt.subplots()
+# ax.plot(q_hist[0, :], q_hist[1, :], color="b", marker="x")
+# ax.set_xlabel("Phi")
+# ax.set_ylabel("h")
+# ax.set_title("MCMC 1000 Steps")
+
+# kdephix = np.linspace(-2e5, -1.3e5, 1000)
+
+# fig, axes = plt.subplots(2, 1)
+# axes[0].plot(kdephix, kde_phi(kdephix))
+# for i in range(2):
+#     axes[i].hist(q_hist[i, :], density=True, bins=25)
+
+# plt.show()

@@ -1,10 +1,13 @@
-import numpy as np
-from utils.markov_chain_monte_carlo import MCMC
-from utils.heat_equation import HeatEquation
-from scipy import io
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy
+from scipy import io
+
+from utils.heat_equation import HeatEquation
+from utils.markov_chain_monte_carlo import MCMC
 
 debug = 0
+long = 1
 
 # Load the data
 data = io.loadmat("HW06_Problem1.mat")
@@ -83,7 +86,7 @@ def prop_rand(q, V):
 def ratio(q_star, qk, V):
     num = pi(q_star) * pi0(q_star) * prop_dist(qk, q_star, V)
     denom = pi(qk) * pi0(qk) * prop_dist(q_star, qk, V)
-    return num / denom
+    return (num / denom, num)
 
 
 # Set up the actual problem
@@ -91,38 +94,19 @@ M = 1_000
 mcmc_1k = MCMC(q0, prop_rand, ratio, D, M, 2012)
 
 r_1k = mcmc_1k.metropolis_hastings()
-q_hist_1k = r_1k[0]
-qMAP_1k = 0  # TODO
+np.savez(
+    "hw6_1_results_1k.npz",
+    q_hist=r_1k[0],
+    post_hist=r_1k[1],
+    accr=r_1k[2],
+)
 
-# mcmc_100k = MCMC(q0, prop_rand, ratio, D, 100_000, 2012)
+if long:
+    mcmc_100k = MCMC(q0, prop_rand, ratio, D, 100_000, 2012)
 
-# r_100k = mcmc_100k.metropolis_hastings()
-# q_hist_100k = r_100k[0]
-# qMAP_100k = 0  # TODO
-
-print(f"The MAP estimate with M=1_000 run is {qMAP_1k}")
-print(f"The acceptance ratio for the M=1_000 MCMC run was {r_1k[1]}")
-# print(f"The MAP estimate with M=100_000 run is {qMAP_100k}")
-# print(f"The acceptance ratio for the M=100_000 MCMC run was {r_100k[1]}")
-
-# KDE of the
-
-# Plotting
-fig, ax = plt.subplots()
-ax.plot(q_hist_1k[0, :], q_hist_1k[1, :], color="b", marker="x")
-ax.set_xlabel("Phi")
-ax.set_ylabel("h")
-ax.set_title("MCMC 1000 Steps")
-
-# fig, ax = plt.subplots()
-# ax.plot(q_hist_100k[0, :], q_hist_100k[1, :], color="b", marker="x")
-# ax.set_xlabel("Phi")
-# ax.set_ylabel("h")
-# ax.set_title("MCMC 100_000 Steps")
-
-# fig, axes = plt.subplots(2, 1)
-# for k in range(2):
-#     axes[k].hist(q_hist_100k[k, :], density=True)
-#     axes[k].set_title("Phi Density")
-
-plt.show()
+    np.savez(
+        "hw6_1_results_100k.npz",
+        q_hist=r_1k[0],
+        post_hist=r_1k[1],
+        accr=r_1k[2],
+    )

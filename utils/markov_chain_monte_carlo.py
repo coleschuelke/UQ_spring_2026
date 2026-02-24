@@ -12,10 +12,12 @@ class MCMC:
 
         np.random.seed(self.rng_seed)
 
-    def metropolis_hastings(self):
+    def metropolis_hastings(self, adaptive=False, gibbs_step=False):
         qk = self.q0
         q_hist = np.zeros((len(qk), self.M))
+        post_hist = np.zeros(self.M)
         q_hist[:, 0] = qk
+        post_hist[0] = 0
 
         acc = 1
 
@@ -25,7 +27,12 @@ class MCMC:
             q_star = self.J_func(qk, self.D)
 
             # Calculate the acceptance ratio
-            r = self.r_calc(q_star, qk, self.D)
+            ratio = self.r_calc(q_star, qk, self.D)
+            if len(ratio) > 1:
+                r = ratio[0]
+                post = ratio[1]
+            else:
+                r = ratio
 
             # Accept according to acceptance ratio
             u = np.random.uniform(0, 1)
@@ -34,17 +41,22 @@ class MCMC:
                 qk = q_star
                 q_hist[:, i] = qk
                 acc += 1
+                if len(ratio) > 1:
+                    post_hist[i] = post
             else:
                 q_hist[:, i] = qk
+                post_hist[i] = post_hist[i - 1]
 
-        return (q_hist, acc / self.M)
+        return (q_hist, post_hist, acc / self.M)
 
     def adaptive_metropolis(self, k0, sp, eps, V0):
         # If I was good, I would set things up so this could call metropolis hastings
         qk = self.q0
         Vk = V0
         q_hist = np.zeros((len(qk), self.M))
+        post_hist = np.zeros(self.M)
         q_hist[:, 0] = qk
+        post_hist[0] = 0
 
         acc = 1
 
@@ -55,7 +67,12 @@ class MCMC:
             q_star = self.J_func(qk, Vk)
 
             # Calculate the acceptance ratio
-            r = self.r_calc(q_star, qk, Vk)
+            ratio = self.r_calc(q_star, qk, Vk)
+            if len(ratio) > 1:
+                r = ratio[0]
+                post = ratio[1]
+            else:
+                r = ratio
 
             # Accept according to acceptance ratio
             u = np.random.uniform(0, 1)
@@ -64,10 +81,13 @@ class MCMC:
                 qk = q_star
                 q_hist[:, i] = qk
                 acc += 1
+                if len(ratio) > 1:
+                    post_hist[i] = post
             else:
                 q_hist[:, i] = qk
+                post_hist[i] = post_hist[i - 1]
 
-        return (q_hist, acc / self.M, Vk)
+        return (q_hist, post_hist, acc / self.M, Vk)
 
     def gibbs(self):
         raise NotImplementedError
