@@ -7,7 +7,7 @@ from utils.heat_equation import HeatEquation
 from utils.markov_chain_monte_carlo import MCMC
 
 debug = 0
-long = 1
+long = 0
 
 # Load the data
 data = io.loadmat("HW06_Problem1.mat")
@@ -35,9 +35,9 @@ def Ts_q(q):
     return eq.Ts_vals(x, q_dict)
 
 
-def pi(q):
-    c = (1 / (np.sqrt(2 * np.pi * sigma02))) ** (len(x))
-    arg = -1 / (2 * sigma02) * (ups - Ts_q(q)).T @ (ups - Ts_q(q))
+def pi(q, s):
+    c = (1 / (np.sqrt(2 * np.pi * s))) ** (len(x))
+    arg = -1 / (2 * s) * (ups - Ts_q(q)).T @ (ups - Ts_q(q))
     p = c * np.exp(arg)
     if p < 1e-15 and debug:
         print("WARNING, LIKELIHOOD NEAR ZERO")
@@ -83,26 +83,26 @@ def prop_rand(q, V):
         return np.random.normal(q, np.sqrt(V))
 
 
-def ratio(q_star, qk, V):
-    num = pi(q_star) * pi0(q_star) * prop_dist(qk, q_star, V)
-    denom = pi(qk) * pi0(qk) * prop_dist(q_star, qk, V)
+def ratio(q_star, qk, V, s):
+    num = pi(q_star, s) * pi0(q_star) * prop_dist(qk, q_star, V)
+    denom = pi(qk, s) * pi0(qk) * prop_dist(q_star, qk, V)
     return (num / denom, num)
 
 
 # Set up the actual problem
 M = 1_000
-mcmc_1k = MCMC(q0, prop_rand, ratio, D, M, 2012)
+mcmc_1k = MCMC(q0, prop_rand, ratio, sigma02, D, M, 2012)
 
 r_1k = mcmc_1k.metropolis_hastings()
 np.savez(
     "hw6_1_results_1k.npz",
     q_hist=r_1k[0],
     post_hist=r_1k[1],
-    accr=r_1k[2],
+    accr=r_1k[3],
 )
 
 if long:
-    mcmc_100k = MCMC(q0, prop_rand, ratio, D, 100_000, 2012)
+    mcmc_100k = MCMC(q0, prop_rand, ratio, sigma02, D, 100_000, 2012)
 
     r_100k = mcmc_100k.metropolis_hastings()
 
@@ -110,5 +110,5 @@ if long:
         "hw6_1_results_100k.npz",
         q_hist=r_100k[0],
         post_hist=r_100k[1],
-        accr=r_100k[2],
+        accr=r_100k[3],
     )
