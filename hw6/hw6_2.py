@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
 from scipy import io
 
 from utils.heat_equation import HeatEquation
@@ -108,27 +107,3 @@ np.savez(
     accr=result[2],
     V=result[3],
 )
-# q_hist = result[0]
-
-# print(f"The acceptance ratio for the run was {result[2]}")
-# print(f"The final variance was {result[3]}")
-# print(f"The MAP estimate for the run was {q_hist[:, np.argmax(result[1])]}")
-
-# # KDE of the data
-# kde_phi = scipy.stats.gaussian_kde(q_hist[0, :])
-
-# # Plotting
-# fig, ax = plt.subplots()
-# ax.plot(q_hist[0, :], q_hist[1, :], color="b", marker="x")
-# ax.set_xlabel("Phi")
-# ax.set_ylabel("h")
-# ax.set_title("MCMC 1000 Steps")
-
-# kdephix = np.linspace(-2e5, -1.3e5, 1000)
-
-# fig, axes = plt.subplots(2, 1)
-# axes[0].plot(kdephix, kde_phi(kdephix))
-# for i in range(2):
-#     axes[i].hist(q_hist[i, :], density=True, bins=25)
-
-# plt.show()

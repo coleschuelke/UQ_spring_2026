@@ -59,10 +59,13 @@ class MCMC:
         post_hist[0] = 0
 
         acc = 1
-
+        fh = False
         for i in range(1, self.M):
             if (i >= k0) and (i % k0 == 0):
                 Vk = sp * np.cov(q_hist[:, :i]) + eps * np.eye(len(qk))
+                if fh == False:
+                    V1 = Vk
+                    fh = True
             # Generate a new point
             q_star = self.J_func(qk, Vk)
 
@@ -87,7 +90,10 @@ class MCMC:
                 q_hist[:, i] = qk
                 post_hist[i] = post_hist[i - 1]
 
-        return (q_hist, post_hist, acc / self.M, Vk)
+            if self.gibbs == True:
+                pass
+
+        return (q_hist, post_hist, acc / self.M, (V1, Vk))
 
     def gibbs(self):
         raise NotImplementedError

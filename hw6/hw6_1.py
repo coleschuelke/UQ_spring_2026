@@ -104,9 +104,11 @@ np.savez(
 if long:
     mcmc_100k = MCMC(q0, prop_rand, ratio, D, 100_000, 2012)
 
+    r_100k = mcmc_100k.metropolis_hastings()
+
     np.savez(
         "hw6_1_results_100k.npz",
-        q_hist=r_1k[0],
-        post_hist=r_1k[1],
-        accr=r_1k[2],
+        q_hist=r_100k[0],
+        post_hist=r_100k[1],
+        accr=r_100k[2],
     )
