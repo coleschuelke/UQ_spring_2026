@@ -58,7 +58,7 @@ class MCMC:
                 a_val = (n_meas + ns) / 2
                 b_val = (ns * self.s + cf(qk)) / 2
 
-                sk = invgamma.rvs(a=a_val, scale=b_val)
+                sk = 1 / np.random.gamma(shape=a_val, scale=1 / b_val)
                 s_hist[i] = sk
 
         return (q_hist, post_hist, s_hist, acc / self.M)

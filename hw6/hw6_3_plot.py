@@ -54,6 +54,9 @@ kde_hx_g = np.linspace(16, 24, 1000)
 kde_phi_g = scipy.stats.gaussian_kde(q_hist_g[0, :])
 kde_h_g = scipy.stats.gaussian_kde(q_hist_g[1, :])
 
+kde_sx = np.linspace(0, 10, 500)
+kde_s = scipy.stats.gaussian_kde(s_hist_g)
+
 
 fig, axes = plt.subplots(2, 1)
 axes[0].plot(kde_phix_ng, kde_phi_ng(kde_phix_ng), label="KDE")
@@ -84,8 +87,9 @@ fig.suptitle("Estimated marginal densities with Gibbs Step")
 # Distribution of estimates of s
 fig, ax = plt.subplots()
 ax.hist(s_hist_g[100:], density=True, bins=100, label="Histogram")
-ax.set_xlabel(r"$\sigma_0^2 ~~~ \frac{W}{m^2}$")
-# ax.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+ax.set_xlabel(r"$\sigma_0^2 ~~~ C^2$")
+ax.plot(kde_sx, kde_s(kde_sx))
+ax.set_title(r"Distribution of $\sigma^2_0$")
 ax.legend()
 
 plt.show()
