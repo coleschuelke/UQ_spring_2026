@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 from scipy import io
 
 from utils.heat_equation import HeatEquation
@@ -8,13 +9,13 @@ from utils.markov_chain_monte_carlo import MCMC
 debug = 0
 
 # Load the data
-data = io.loadmat("HW06_Problem3.mat")
+data = io.loadmat("HW06_Problem1.mat")
 ups = data["observations"][0]
 x0 = 0.1  # m
 dx = 0.04  # m
 x = np.array([x0 + j * dx for j in range(15)])  # X values of the data
 
-sigma02 = 2**2  # C^2
+sigma02 = 0.356
 
 D = np.diag([1e6, 2e-2])  # Converted to units in meters
 
@@ -89,30 +90,51 @@ def ratio(q_star, qk, V, s):
 
 def cf(q):
     residuals = ups - Ts_q(q)
-    return residuals.T @ residuals
+    return residuals
 
 
-mcmc = MCMC(q0, prop_rand, ratio, sigma02, D, 10000, 50)
+def jac(q):
+    q_dict = {
+        "phi": q[0],
+        "h": q[1],
+    }
 
-# No gibbs step
-rng = mcmc.metropolis_hastings()
-
-# gibbs step
-rg = mcmc.metropolis_hastings(gibbs_step=True, ns=0.01, cf=cf, n_meas=len(x))
+    return -1 * eq.Ts_jac(x, ["phi", "h"], q_dict)
 
 
-np.savez(
-    "hw6_3_results_ng.npz",
-    q_hist=rng[0],
-    post_hist=rng[1],
-    s_hist=rng[2],
-    accr=rng[3],
+#### Least Squares Fit ####
+q_hat = scipy.optimize.least_squares(cf, q0, jac)
+q_ls = q_hat.x
+print(f"The point estimate of q is: {q_ls}")
+
+residuals = cf(q_ls)
+s2 = residuals.T @ residuals / len(x)
+V = s2 * np.linalg.inv((jac(q_ls).T @ jac(q_ls)))
+print(f"The estimated covariance is {V}")
+
+mcmc = MCMC(
+    q_ls,
+    prop_rand,
+    ratio,
+    sigma02,
+    V,
+    1000,
+    55,
 )
 
-np.savez(
-    "hw6_3_results_g.npz",
-    q_hist=rg[0],
-    post_hist=rg[1],
-    s_hist=rg[2],
-    accr=rg[3],
+
+result = mcmc.metropolis_hastings()
+
+print(
+    f"The MAP estimate from the MCMC run is: {result[0][:, np.argmax(result[1][100:])]}"
 )
+print(f"The acceptance ratio for the run is {result[3]}")
+
+fig, ax = plt.subplots()
+ax.plot(result[0][0, :], result[0][1, :], color="b", marker="x")
+ax.set_xlabel(r"Phi $\frac{W}{m^2}$")
+ax.set_ylabel(r"h   $\frac{W}{m^2C}$")
+ax.set_title("MCMC 1_000 Steps")
+ax.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+
+plt.show()

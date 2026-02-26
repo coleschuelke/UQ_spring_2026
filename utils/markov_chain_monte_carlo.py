@@ -12,11 +12,11 @@ class MCMC:
         self.M = M
         self.rng_seed = rng_seed
 
-        self.n = len(q0)
-
         np.random.seed(self.rng_seed)
 
-    def metropolis_hastings(self, adaptive=False, gibbs_step=False, ns=0, cf=None):
+    def metropolis_hastings(
+        self, adaptive=False, gibbs_step=False, ns=0, n_meas=0, cf=None
+    ):
         qk = self.q0
         sk = self.s
         q_hist = np.zeros((len(qk), self.M))
@@ -55,8 +55,8 @@ class MCMC:
                 post_hist[i] = post_hist[i - 1]
 
             if gibbs_step:
-                a_val = (self.n + ns) / 2
-                b_val = (ns * sk + cf(qk)) / 2
+                a_val = (n_meas + ns) / 2
+                b_val = (ns * self.s + cf(qk)) / 2
 
                 sk = invgamma.rvs(a=a_val, scale=b_val)
                 s_hist[i] = sk
