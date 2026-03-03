@@ -1,12 +1,13 @@
+import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 from scipy import io
 
 from utils.heat_equation import HeatEquation
-from utils.markov_chain_monte_carlo import MCMC, plot_mcmc_2d
-
+from utils.markov_chain_monte_carlo import MCMC
 
 # Load the data
-data = io.loadmat("HW06_Problem1.mat")
+data = io.loadmat("HW06_Problem3.mat")
 ups = data["observations"][0]
 x0 = 0.1  # m
 dx = 0.04  # m
@@ -22,7 +23,7 @@ eq = HeatEquation(k=230, Tamb=21.29)
 run = False
 
 
-##### ALL HELPER FUNCTIONS #####
+# Define some helper functions
 def Ts_q(q):
     q_dict = {
         "phi": q[0],
@@ -36,7 +37,6 @@ def pi(q, s):
     c = (1 / (np.sqrt(2 * np.pi * s))) ** (len(x))
     arg = -1 / (2 * s) * (ups - Ts_q(q)).T @ (ups - Ts_q(q))
     p = c * np.exp(arg)
-
     return p
 
 
@@ -55,7 +55,6 @@ def pi0(q):
     argh = -1 / (2 * sigma_h**2) * (h - mu_h) ** 2
 
     p = cphi * ch * np.exp(argphi + argh)
-
     return p
 
 
@@ -81,19 +80,26 @@ def ratio(q_star, qk, V, s):
     return (num / denom, num)
 
 
-##### END OF HELPER FUNCTIONS #####
+def cf(q):
+    residuals = ups - Ts_q(q)
+    return residuals
 
-# Results with DR
-mcmc = MCMC(q0=q0, J_func=prop_rand, r_calc=ratio, s=sigma02, D=D, M=1_000)
 
-if run:
-    dr_results = mcmc.metropolis_hastings(
-        adaptive=False,
-        gibbs_step=False,
-        delayed_rejection=True,
-        gamma2=0.2,
-        save_output=True,
-        filename="hw7_1_results.npz",
-    )
+def jac(q):
+    q_dict = {
+        "phi": q[0],
+        "h": q[1],
+    }
 
-plot_mcmc_2d("hw7_1_results.npz")
+    return -1 * eq.Ts_jac(x, ["phi", "h"], q_dict)
+
+
+#### Least Squares Fit ####
+q_hat = scipy.optimize.least_squares(cf, q0, jac)
+q_ls = q_hat.x
+print(f"The point estimate of q is: {q_ls}")
+
+residuals = cf(q_ls)
+s2 = residuals.T @ residuals / len(x)
+V = s2 * np.linalg.inv((jac(q_ls).T @ jac(q_ls)))
+print(f"The estimated covariance is {V}")

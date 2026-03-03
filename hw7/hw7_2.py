@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import io
+from scipy import io, stats
 
 from utils.heat_equation import HeatEquation
 from utils.markov_chain_monte_carlo import MCMC, plot_mcmc_2d
@@ -81,19 +81,53 @@ def ratio(q_star, qk, V, s):
     return (num / denom, num)
 
 
+def cf(q):
+    residuals = ups - Ts_q(q)
+    return residuals.T @ residuals
+
+
 ##### END OF HELPER FUNCTIONS #####
 
-# Results with DR
+
+# Actual Problem
 mcmc = MCMC(q0=q0, J_func=prop_rand, r_calc=ratio, s=sigma02, D=D, M=1_000)
 
 if run:
-    dr_results = mcmc.metropolis_hastings(
-        adaptive=False,
-        gibbs_step=False,
+    dram_results = mcmc.metropolis_hastings(
+        adaptive=True,
+        k0=100,
+        sp=2.38**2 / 2,
+        eps=0,
+        V0=D,
+        gibbs_step=True,
+        ns=0.01,
+        n_meas=len(x),
+        cf=cf,
         delayed_rejection=True,
         gamma2=0.2,
         save_output=True,
-        filename="hw7_1_results.npz",
+        filename="hw7_2_results.npz",
     )
 
-plot_mcmc_2d("hw7_1_results.npz")
+# Intervals
+n = 0
+p = 0
+
+phi = dram_results[0][0, :]
+h = dram_results[0][1, :]
+s = dram_results[2]
+
+phi_map = 0
+h_map = 0
+s_map = 0
+
+q1_ci_lo, q1_ci_hi = stats.t.interval(
+    0.95, df=n - p, loc=q_hat_ls[0], scale=np.sqrt(q_var * xtxinv_diag[0])
+)
+q2_ci_lo, q2_ci_hi = stats.t.interval(
+    0.95, df=n - p, loc=q_hat_ls[1], scale=np.sqrt(q_var * xtxinv_diag[1])
+)
+
+
+# Plotting
+plot_mcmc_2d("hw7_2_results.npz")
