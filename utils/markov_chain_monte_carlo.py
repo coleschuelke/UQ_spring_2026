@@ -1,9 +1,13 @@
 import numpy as np
-from scipy.stats import invgamma
+import scipy
+import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf
 
 
 class MCMC:
-    def __init__(self, q0, J_func, r_calc, s, D, M=1_000, rng_seed=42):
+    def __init__(
+        self, q0=None, J_func=None, r_calc=None, s=None, D=None, M=1_000, rng_seed=42
+    ):
         self.q0 = q0
         self.J_func = J_func
         self.r_calc = r_calc
@@ -15,44 +19,100 @@ class MCMC:
         np.random.seed(self.rng_seed)
 
     def metropolis_hastings(
-        self, adaptive=False, gibbs_step=False, ns=0, n_meas=0, cf=None
+        self,
+        # Flags
+        adaptive=False,
+        gibbs_step=False,
+        delayed_rejection=False,
+        save_output=False,
+        # Adaptive params
+        k0=None,
+        sp=None,
+        eps=None,
+        V0=None,
+        # Gibbs params
+        ns=None,
+        n_meas=None,
+        cf=None,
+        # Delayed rejection params
+        gamma2=None,
+        # Save
+        filename=None,
     ):
+        # Perform checks on arguments
+        if adaptive:
+            if any(p is None for p in [k0, sp, eps, V0]):
+                raise ValueError("All adaptive parameters must be provided.")
+        if gibbs_step:
+            if any(p is None for p in [ns, n_meas, cf]):
+                raise ValueError("All Gibbs parameters must be provided.")
+        if save_output:
+            if filename is None:
+                raise ValueError("Please provide a file name.")
+
+        # Set up
         qk = self.q0
         sk = self.s
+        if adaptive:
+            Vk = V0
+        else:
+            Vk = self.D
+
+        n = len(qk)
+
+        # Initialize outputs
         q_hist = np.zeros((len(qk), self.M))
         post_hist = np.zeros(self.M)
         s_hist = np.zeros(self.M)
+        # Store initial values
         q_hist[:, 0] = qk
         post_hist[0] = 0
         s_hist[0] = sk
 
+        # Init acceptance counter
         acc = 1
 
         for i in range(1, self.M):
+            # Adapt (or don't)
+            if adaptive:
+                if (i >= k0) and (i % k0 == 0):
+                    Vk = sp * np.cov(q_hist[:, :i]) + eps * np.eye(n)
 
             # Generate a new point
-            q_star = self.J_func(qk, self.D)
+            rejected = False
+            Vin = Vk
+            while True:
+                if not rejected:
+                    q_star = self.J_func(qk, Vin)
+                else:
+                    q_star = np.random.multivariate_normal(qk, Vin)
 
-            # Calculate the acceptance ratio
-            ratio = self.r_calc(q_star, qk, self.D, sk)
-            if len(ratio) > 1:
-                r = ratio[0]
-                post = ratio[1]
-            else:
-                r = ratio
-
-            # Accept according to acceptance ratio
-            u = np.random.uniform(0, 1)
-            alpha = min(1, r)
-            if u <= alpha:
-                qk = q_star
-                q_hist[:, i] = qk
-                acc += 1
+                # Calculate the acceptance ratio
+                ratio = self.r_calc(q_star, qk, Vin, sk)
                 if len(ratio) > 1:
-                    post_hist[i] = post
-            else:
-                q_hist[:, i] = qk
-                post_hist[i] = post_hist[i - 1]
+                    r = ratio[0]
+                    post = ratio[1]
+                else:
+                    r = ratio
+
+                # Accept according to acceptance ratio
+                u = np.random.uniform(0, 1)
+                alpha = min(1, r)
+                if u <= alpha:  # Accept
+                    qk = q_star
+                    q_hist[:, i] = qk
+                    acc += 1
+                    if len(ratio) > 1:
+                        post_hist[i] = post
+                    break
+                else:  # Failed r_calc
+                    if delayed_rejection and not rejected:
+                        Vin = gamma2**2 * Vk  # TODO
+                        rejected = True
+                        continue
+
+                    q_hist[:, i] = qk
+                    post_hist[i] = post_hist[i - 1]
 
             if gibbs_step:
                 a_val = (n_meas + ns) / 2
@@ -61,66 +121,127 @@ class MCMC:
                 sk = 1 / np.random.gamma(shape=a_val, scale=1 / b_val)
                 s_hist[i] = sk
 
+        if save_output:
+            print(f"Saving output to {filename}")
+            np.savez(
+                filename,
+                q_hist=q_hist,
+                post_hist=post_hist,
+                s_hist=s_hist,
+                accr=acc / self.M,
+            )
+
         return (q_hist, post_hist, s_hist, acc / self.M)
 
-    def adaptive_metropolis(self, k0, sp, eps, V0):
-        # If I was good, I would set things up so this could call metropolis hastings
-        qk = self.q0
-        Vk = V0
-        q_hist = np.zeros((len(qk), self.M))
-        post_hist = np.zeros(self.M)
-        q_hist[:, 0] = qk
-        post_hist[0] = 0
 
-        acc = 1
-        fh = False
-        for i in range(1, self.M):
-            if (i >= k0) and (i % k0 == 0):
-                Vk = sp * np.cov(q_hist[:, :i]) + eps * np.eye(len(qk))
-                if fh == False:
-                    V1 = Vk
-                    fh = True
-            # Generate a new point
-            q_star = self.J_func(qk, Vk)
+def plot_mcmc_2d(filepath):
 
-            # Calculate the acceptance ratio
-            ratio = self.r_calc(q_star, qk, Vk, self.s)
-            if len(ratio) > 1:
-                r = ratio[0]
-                post = ratio[1]
-            else:
-                r = ratio
+    result = np.load(filepath)
 
-            # Accept according to acceptance ratio
-            u = np.random.uniform(0, 1)
-            alpha = min(1, r)
-            if u <= alpha:
-                qk = q_star
-                q_hist[:, i] = qk
-                acc += 1
-                if len(ratio) > 1:
-                    post_hist[i] = post
-            else:
-                q_hist[:, i] = qk
-                post_hist[i] = post_hist[i - 1]
+    q_hist = result["q_hist"]
+    post_hist = result["post_hist"]
+    s_hist = result["s_hist"]
+    accr = result["accr"]
 
-            if self.gibbs == True:
-                pass
+    MAP = q_hist[:, np.argmax(post_hist[100:])]
+    gibbs_est = np.mean(s_hist[-10:])
 
-        return (q_hist, post_hist, acc / self.M, (V1, Vk))
+    print("RESULTS: ")
+    print(f"The acceptance ratio was {accr}")
+    print(f"The MAP estimate was {MAP}")
+    print(f"The Gibbs estimate of the variance was {gibbs_est}")
 
-    def gibbs(self):
-        raise NotImplementedError
-        qk = self.q0
-        p = len(qk)
-        q_hist = np.zeros((p, self.M))
+    # Chain plot
+    fig, ax = plt.subplots()
+    ax.plot(q_hist[0, :], q_hist[1, :], color="b", marker="x")
+    ax.set_xlabel(r"$q_1$")
+    ax.set_ylabel(r"$q_2$")
+    ax.set_title(f"MCMC Path")
+    ax.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
 
-        for i in range(self.M):
-            q_star = qk
-            for j in range(p):
-                x = 0  # TODO: get marginal based on all other elements
-                q_star[j] = x
-            qk = q_star
-            q_hist[:, i] = qk
+    # Marginal Histograms
+    kde_q1x = np.linspace(min(q_hist[0, :]), max(q_hist[0, :]), 1000)
+    kde_q2x = np.linspace(min(q_hist[1, :]), max(q_hist[1, :]), 1000)
+    kde_q1 = scipy.stats.gaussian_kde(q_hist[0, :])
+    kde_q2 = scipy.stats.gaussian_kde(q_hist[1, :])
 
-        return q_hist
+    fig, axes = plt.subplots(2, 1, constrained_layout=True)
+    axes[0].plot(kde_q1x, kde_q1(kde_q1x), label="KDE")
+    axes[0].hist(q_hist[0, :], density=True, bins=100, label="Histogram")
+    axes[0].set_xlabel(r"$q_1$")
+    axes[0].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    axes[0].legend()
+
+    axes[1].plot(kde_q2x, kde_q2(kde_q2x), label="KDE")
+    axes[1].hist(q_hist[1, :], density=True, bins=100, label="Histogram")
+    axes[1].set_xlabel(r"$q_2$")
+    axes[1].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    axes[1].legend()
+    fig.suptitle("Estimated marginal densities")
+
+    # Distribution of s
+    kde_sx = np.linspace(0, max(s_hist) / 10, 500)
+    kde_s = scipy.stats.gaussian_kde(s_hist)
+
+    fig, ax = plt.subplots()
+    ax.hist(s_hist[100:], density=True, bins=100, label="Histogram")
+    ax.set_xlabel(r"$\sigma_0^2$")
+    ax.plot(kde_sx, kde_s(kde_sx))
+    ax.set_title(r"Distribution of $\sigma^2_0$")
+    ax.legend()
+
+    # Trace plots
+    fig, axes = plt.subplots(3, 1, constrained_layout=True)
+    axes[0].plot(q_hist[0, :])
+    axes[0].set_xlabel(r"$q_1$")
+    # axes[0].set_xscale("log")
+    axes[1].plot(q_hist[1, :])
+    axes[1].set_xlabel(r"$q_2$")
+    # axes[1].set_xscale("log")
+    axes[2].plot(s_hist)
+    axes[2].set_xlabel(r"$\sigma_0^2$")
+    # axes[2].set_xscale("log")
+
+    fig.suptitle("Trace Plots")
+
+    # Correleograms
+    fig, axes = plt.subplots(3, 1, constrained_layout=True)
+    plot_acf(
+        q_hist[0, :],
+        ax=axes[0],
+        alpha=None,
+        lags=range(1000),
+        use_vlines=False,
+        marker=None,
+        linestyle="-",
+        title=None,
+    )
+    axes[0].hlines(0, 0, 1000, color="k", linestyle=":")
+    axes[0].set_xlabel(r"$q_1$")
+    plot_acf(
+        q_hist[1, :],
+        ax=axes[1],
+        alpha=None,
+        lags=range(1000),
+        use_vlines=False,
+        marker=None,
+        linestyle="-",
+        title=None,
+    )
+    axes[1].hlines(0, 0, 1000, color="k", linestyle=":")
+    axes[1].set_xlabel(r"$q_2$")
+    plot_acf(
+        s_hist,
+        ax=axes[2],
+        alpha=None,
+        lags=range(1000),
+        use_vlines=False,
+        marker=None,
+        linestyle="-",
+        title=None,
+    )
+    axes[2].hlines(0, 0, 1000, color="k", linestyle=":")
+    axes[2].set_xlabel(r"$\sigma_0^2$")
+    fig.suptitle("Autocorrelation")
+
+    plt.show()
