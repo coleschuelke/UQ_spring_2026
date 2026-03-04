@@ -78,7 +78,11 @@ def prop_rand(q, V):
 def ratio(q_star, qk, V, s):
     num = pi(q_star, s) * pi0(q_star) * prop_dist(qk, q_star, V)
     denom = pi(qk, s) * pi0(qk) * prop_dist(q_star, qk, V)
-    return (num / denom, num)
+    return num / denom
+
+
+def posterior(q, s):
+    return pi(q, s) * pi0(q)
 
 
 def cf(q):
@@ -90,7 +94,9 @@ def cf(q):
 
 
 # Actual Problem
-mcmc = MCMC(q0=q0, J_func=prop_rand, r_calc=ratio, s=sigma02, D=D, M=1_000)
+mcmc = MCMC(
+    q0=q0, J_func=prop_rand, r_calc=ratio, post=posterior, s=sigma02, D=D, M=1_000
+)
 
 if run:
     dram_results = mcmc.metropolis_hastings(
@@ -110,24 +116,28 @@ if run:
     )
 
 # Intervals
-n = 0
-p = 0
+results = np.load("hw7_2_results.npz")
+alpha = 0.05
 
-phi = dram_results[0][0, :]
-h = dram_results[0][1, :]
-s = dram_results[2]
+phi = results["q_hist"][0, 100:]
+h = results["q_hist"][1, 100:]
+s = results["s_hist"][100:]
 
-phi_map = 0
-h_map = 0
-s_map = 0
+phi_int = np.array([np.quantile(phi, alpha / 2), np.quantile(phi, 1 - alpha / 2)])
+h_int = np.array([np.quantile(h, alpha / 2), np.quantile(h, 1 - alpha / 2)])
+s_int = np.array([np.quantile(s, alpha / 2), np.quantile(s, 1 - alpha / 2)])
 
-q1_ci_lo, q1_ci_hi = stats.t.interval(
-    0.95, df=n - p, loc=q_hat_ls[0], scale=np.sqrt(q_var * xtxinv_diag[0])
-)
-q2_ci_lo, q2_ci_hi = stats.t.interval(
-    0.95, df=n - p, loc=q_hat_ls[1], scale=np.sqrt(q_var * xtxinv_diag[1])
-)
+print(f"The approximated credible intervals for phi are {phi_int}")
+print(f"The approximated credible intervals for h are {h_int}")
+print(f"The approximated credible intervals for s are {s_int}")
 
+# Sanity checks
+maxs_idx = np.argmax(s)
+s_here = s[maxs_idx]
+q_here = results["q_hist"][:, maxs_idx]
+post_here = posterior(q_here, s_here)
+print(f"The posterior at the max value of s is {post_here}")
+print(f"The max value of the posterior is {np.max(results["post_hist"])}")
 
 # Plotting
 plot_mcmc_2d("hw7_2_results.npz")

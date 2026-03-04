@@ -6,11 +6,20 @@ from statsmodels.graphics.tsaplots import plot_acf
 
 class MCMC:
     def __init__(
-        self, q0=None, J_func=None, r_calc=None, s=None, D=None, M=1_000, rng_seed=42
+        self,
+        q0=None,
+        J_func=None,
+        r_calc=None,
+        post=None,
+        s=None,
+        D=None,
+        M=1_000,
+        rng_seed=42,
     ):
         self.q0 = q0
         self.J_func = J_func
         self.r_calc = r_calc
+        self.post = post
         self.s = s
         self.D = D
         self.M = M
@@ -88,12 +97,7 @@ class MCMC:
                     q_star = np.random.multivariate_normal(qk, Vin)
 
                 # Calculate the acceptance ratio
-                ratio = self.r_calc(q_star, qk, Vin, sk)
-                if len(ratio) > 1:
-                    r = ratio[0]
-                    post = ratio[1]
-                else:
-                    r = ratio
+                r = self.r_calc(q_star, qk, Vin, sk)
 
                 # Accept according to acceptance ratio
                 u = np.random.uniform(0, 1)
@@ -102,17 +106,14 @@ class MCMC:
                     qk = q_star
                     q_hist[:, i] = qk
                     acc += 1
-                    if len(ratio) > 1:
-                        post_hist[i] = post
                     break
                 else:  # Failed r_calc
                     if delayed_rejection and not rejected:
-                        Vin = gamma2**2 * Vk  # TODO
+                        Vin = gamma2**2 * Vk
                         rejected = True
                         continue
 
                     q_hist[:, i] = qk
-                    post_hist[i] = post_hist[i - 1]
 
             if gibbs_step:
                 a_val = (n_meas + ns) / 2
@@ -120,6 +121,12 @@ class MCMC:
 
                 sk = 1 / np.random.gamma(shape=a_val, scale=1 / b_val)
                 s_hist[i] = sk
+                p = self.post(qk, sk) * scipy.stats.invgamma.pdf(
+                    sk, a=ns / 2, scale=(ns * self.s) / 2
+                )
+            else:
+                p = self.post(qk, sk)
+            post_hist[i] = p
 
         if save_output:
             print(f"Saving output to {filename}")
@@ -143,7 +150,8 @@ def plot_mcmc_2d(filepath):
     s_hist = result["s_hist"]
     accr = result["accr"]
 
-    MAP = q_hist[:, np.argmax(post_hist[100:])]
+    MAPidx = np.argmax(post_hist[100:])
+    MAP = np.array([q_hist[0, MAPidx], q_hist[1, MAPidx], s_hist[MAPidx]])
     gibbs_est = np.mean(s_hist[-10:])
 
     print("RESULTS: ")

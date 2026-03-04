@@ -78,13 +78,19 @@ def prop_rand(q, V):
 def ratio(q_star, qk, V, s):
     num = pi(q_star, s) * pi0(q_star) * prop_dist(qk, q_star, V)
     denom = pi(qk, s) * pi0(qk) * prop_dist(q_star, qk, V)
-    return (num / denom, num)
+    return num / denom
+
+
+def posterior(q, s):
+    return pi(q, s) * pi0(q)
 
 
 ##### END OF HELPER FUNCTIONS #####
 
 # Results with DR
-mcmc = MCMC(q0=q0, J_func=prop_rand, r_calc=ratio, s=sigma02, D=D, M=1_000)
+mcmc = MCMC(
+    q0=q0, J_func=prop_rand, r_calc=ratio, post=posterior, s=sigma02, D=D, M=1_000
+)
 
 if run:
     dr_results = mcmc.metropolis_hastings(

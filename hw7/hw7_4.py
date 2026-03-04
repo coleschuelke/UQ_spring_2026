@@ -4,7 +4,7 @@ import scipy
 from scipy import io
 
 from utils.heat_equation import HeatEquation
-from utils.markov_chain_monte_carlo import MCMC
+from utils.markov_chain_monte_carlo import MCMC, plot_mcmc_2d
 
 # Load the data
 data = io.loadmat("HW06_Problem3.mat")
@@ -23,7 +23,7 @@ eq = HeatEquation(k=230, Tamb=21.29)
 run = False
 
 
-# Define some helper functions
+##### ALL HELPER FUNCTIONS #####
 def Ts_q(q):
     q_dict = {
         "phi": q[0],
@@ -77,7 +77,11 @@ def prop_rand(q, V):
 def ratio(q_star, qk, V, s):
     num = pi(q_star, s) * pi0(q_star) * prop_dist(qk, q_star, V)
     denom = pi(qk, s) * pi0(qk) * prop_dist(q_star, qk, V)
-    return (num / denom, num)
+    return num / denom
+
+
+def posterior(q, s):
+    return pi(q, s) * pi0(q)
 
 
 def cf(q):
@@ -94,12 +98,63 @@ def jac(q):
     return -1 * eq.Ts_jac(x, ["phi", "h"], q_dict)
 
 
+##### END OF HELPER FUNCTIONS #####
+
 #### Least Squares Fit ####
 q_hat = scipy.optimize.least_squares(cf, q0, jac)
 q_ls = q_hat.x
 print(f"The point estimate of q is: {q_ls}")
 
 residuals = cf(q_ls)
-s2 = residuals.T @ residuals / len(x)
-V = s2 * np.linalg.inv((jac(q_ls).T @ jac(q_ls)))
-print(f"The estimated covariance is {V}")
+s2ls = residuals.T @ residuals / len(x)
+Vls = s2ls * np.linalg.inv((jac(q_ls).T @ jac(q_ls)))
+print(f"The estimated covariance is {Vls}")
+
+# Actual Problem
+mcmc = MCMC(
+    q0=q_ls, J_func=prop_rand, r_calc=ratio, post=posterior, s=s2ls, D=D, M=1_000
+)
+
+if run:
+    dram_results = mcmc.metropolis_hastings(
+        adaptive=True,
+        k0=100,
+        sp=2.38**2 / 2,
+        eps=0,
+        V0=Vls,
+        gibbs_step=True,
+        ns=0.01,
+        n_meas=len(x),
+        cf=cf,
+        delayed_rejection=True,
+        gamma2=0.2,
+        save_output=True,
+        filename="hw7_4_results.npz",
+    )
+
+# Intervals
+results = np.load("hw7_4_results.npz")
+alpha = 0.05
+
+phi = results["q_hist"][0, 100:]
+h = results["q_hist"][1, 100:]
+s = results["s_hist"][100:]
+
+phi_int = np.array([np.quantile(phi, alpha / 2), np.quantile(phi, 1 - alpha / 2)])
+h_int = np.array([np.quantile(h, alpha / 2), np.quantile(h, 1 - alpha / 2)])
+s_int = np.array([np.quantile(s, alpha / 2), np.quantile(s, 1 - alpha / 2)])
+
+print(f"The approximated credible intervals for phi are {phi_int}")
+print(f"The approximated credible intervals for h are {h_int}")
+print(f"The approximated credible intervals for s are {s_int}")
+
+# Sanity checks
+maxs_idx = np.argmax(s)
+s_here = s[maxs_idx]
+q_here = results["q_hist"][:, maxs_idx]
+post_here = posterior(q_here, s_here)
+print(f"The posterior at the max value of s is {post_here}")
+print(f"The max value of the posterior is {np.max(results["post_hist"])}")
+
+# Plotting
+plot_mcmc_2d("hw7_4_results.npz")
