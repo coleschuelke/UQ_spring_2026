@@ -19,7 +19,7 @@ q0 = np.array([-150000, 20]).T
 eq = HeatEquation(k=230, Tamb=21.29)
 
 # Control
-run = True
+run = False
 
 
 ##### ALL HELPER FUNCTIONS #####
