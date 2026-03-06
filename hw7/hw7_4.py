@@ -84,9 +84,14 @@ def posterior(q, s):
     return pi(q, s) * pi0(q)
 
 
-def cf(q):
+def cf_ls(q):
     residuals = ups - Ts_q(q)
     return residuals
+
+
+def cf_gibbs(q):
+    residuals = ups - Ts_q(q)
+    return residuals.T @ residuals
 
 
 def jac(q):
@@ -101,11 +106,11 @@ def jac(q):
 ##### END OF HELPER FUNCTIONS #####
 
 #### Least Squares Fit ####
-q_hat = scipy.optimize.least_squares(cf, q0, jac)
+q_hat = scipy.optimize.least_squares(cf_ls, q0, jac)
 q_ls = q_hat.x
 print(f"The point estimate of q is: {q_ls}")
 
-residuals = cf(q_ls)
+residuals = cf_ls(q_ls)
 s2ls = residuals.T @ residuals / len(x)
 Vls = s2ls * np.linalg.inv((jac(q_ls).T @ jac(q_ls)))
 print(f"The estimated covariance is {Vls}")
@@ -125,7 +130,7 @@ if run:
         gibbs_step=True,
         ns=0.01,
         n_meas=len(x),
-        cf=cf,
+        cf=cf_gibbs,
         delayed_rejection=True,
         gamma2=0.2,
         save_output=True,

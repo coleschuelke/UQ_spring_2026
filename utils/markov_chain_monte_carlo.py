@@ -92,7 +92,9 @@ class MCMC:
             Vin = Vk
             while True:
                 if not rejected:
-                    q_star = self.J_func(qk, Vin)
+                    q_star = self.J_func(
+                        qk, Vin
+                    )  # Should make these moments kwargs since it may not always be gaussian
                 else:
                     q_star = np.random.multivariate_normal(qk, Vin)
 
@@ -106,14 +108,18 @@ class MCMC:
                     qk = q_star
                     q_hist[:, i] = qk
                     acc += 1
+                    # print("Accepted")
                     break
                 else:  # Failed r_calc
+                    # print("Failed r_calc!!")
                     if delayed_rejection and not rejected:
                         Vin = gamma2**2 * Vk
                         rejected = True
+                        # print("Decreased the covariance!")
                         continue
-
-                    q_hist[:, i] = qk
+                    else:
+                        q_hist[:, i] = qk
+                        break
 
             if gibbs_step:
                 a_val = (n_meas + ns) / 2
@@ -121,10 +127,15 @@ class MCMC:
 
                 sk = 1 / np.random.gamma(shape=a_val, scale=1 / b_val)
                 s_hist[i] = sk
-                p = self.post(qk, sk) * scipy.stats.invgamma.pdf(
-                    sk, a=ns / 2, scale=(ns * self.s) / 2
+
+                # Evaluate the posterior using the sigma prior
+                p = (
+                    self.post(qk, sk)
+                    * sk ** (-ns / 2 + 1)
+                    * np.exp((self.s * ns / 2) / sk)
                 )
             else:
+                # Can evaluate posterior without sigma prior (would be nice to make this a log situation)
                 p = self.post(qk, sk)
             post_hist[i] = p
 
