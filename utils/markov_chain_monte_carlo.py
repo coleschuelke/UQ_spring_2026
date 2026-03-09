@@ -199,7 +199,7 @@ def plot_mcmc_2d(filepath):
     fig.suptitle("Estimated marginal densities")
 
     # Distribution of s
-    kde_sx = np.linspace(0, max(s_hist) / 10, 500)
+    kde_sx = np.linspace(0, max(s_hist), 500)
     kde_s = scipy.stats.gaussian_kde(s_hist)
 
     fig, ax = plt.subplots()
