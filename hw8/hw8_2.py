@@ -7,7 +7,6 @@ from utils.heat_equation import HeatEquation
 
 # Load the data
 data = scipy.io.loadmat("HW08_Problem2")
-print(data.keys())
 
 q_samples = data["q_samples"]
 s02_samples = data["variance0_samps"][0]
@@ -126,16 +125,18 @@ print(f"Percentage of measurements within prediction interval: {within/len(ups)}
 # x=10cm
 kdex = np.linspace(min(temps10), max(temps10), 1000)
 kde = scipy.stats.gaussian_kde(temps10)
-plt.hist(temps10, density=True, bins=100)
-plt.plot(kdex, kde(kdex))
-plt.vlines([lo10, hi10], 0, 0.5, colors="orange")
-
-# All values of x
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Assuming these are your existing variables:
-# x_vals, cred_int, pred_int, residuals, Ts_mean
+plt.hist(temps10, density=True, bins=100, label="Histogram")
+plt.plot(kdex, kde(kdex), label="KDE")
+plt.vlines(
+    [lo10, hi10],
+    0,
+    0.5,
+    colors="orange",
+    label="Confidence Intervals",
+)
+plt.title("x = 10cm")
+plt.xlabel(r"$T_s(0.1,q)$")
+plt.legend()
 
 fig, (ax1, ax2) = plt.subplots(
     2, 1, figsize=(10, 8), sharex=True, gridspec_kw={"height_ratios": [3, 1]}

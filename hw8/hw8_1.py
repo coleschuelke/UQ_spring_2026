@@ -18,22 +18,25 @@ s2s = [0.01, 0.1]
 reals = np.zeros((2, 10**7))
 
 for i, s2 in enumerate(s2s):
-    print("Entering the loop")
     EY = f(q_bar)
     varY = grad_f(q_bar) * s2 * grad_f(q_bar)
     print(f"Variance of X: {s2}")
-    print(f"E[Y] = {EY}")
-    print(f"Var(Y) = {varY}\n")
+    print(f"Perturbation E[Y] = {EY}")
+    print(f"perturbation Var(Y) = {varY}")
 
-    print("Drawing random numbers")
-    reals[i, :] = np.random.normal(q_bar, np.sqrt(s2), 10**7)
+    X = np.random.normal(q_bar, np.sqrt(s2), 10**7)
+    reals = f(X)
+    mean = np.mean(reals)
+    var = np.var(reals)
 
-    # Plot
-    print("Plotting")
-    kdex = np.linspace(min(reals[i, :]), max(reals[i, :]), 1000)
-    kde = scipy.stats.gaussian_kde(reals[i, :])
-    fig, ax = plt.subplots()
-    ax.hist(reals[i, :], bins=500, density=True)
-    ax.plot(kdex, kde(kdex))
+    print(f"True E[Y] = {mean}")
+    print(f"True Var(Y) = {var}\n")
+
+    ## Plot
+    # kdex = np.linspace(min(reals), max(reals), 1000)
+    # kde = scipy.stats.gaussian_kde(reals)
+    # fig, ax = plt.subplots()
+    # ax.hist(reals, bins=500, density=True)
+    # ax.plot(kdex, kde(kdex))
 
 plt.show()
