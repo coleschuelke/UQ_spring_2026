@@ -45,7 +45,7 @@ def draw_lhs(N):
 
 
 # Brute force monte-carlo
-big = 100_000
+big = 10  # _000_000
 phi_big = np.random.normal(-15e4, np.sqrt(10e8), big)
 h_big = np.random.uniform(5, 15, big)
 q_big = np.column_stack((phi_big, h_big))
@@ -58,9 +58,13 @@ var = np.var(temp_big)
 # print(f"The variance of the brute force method is: {var}")
 print(f"The mean and variance using brute force: E[Y] = {mean}, Var(Y) = {var}")
 # Converges at a rate of 1/sqrt(N)
+print(f"The variance in the estimate of the mean is {np.var(temp_big)/np.sqrt(big)}")
+print(
+    f"The variance in the estimate of the variance is {(stats.moment(temp_big, order=4) - np.var(temp_big)**2)/big}"
+)
 
 # MC vs LHS head-to-head 100 samples
-n_samp = 100
+n_samp = 5
 phi_samp = np.random.normal(-15e4, np.sqrt(10e8), n_samp)
 h_samp = np.random.uniform(5, 15, n_samp)
 mc_samples = np.column_stack((phi_samp, h_samp))
@@ -112,4 +116,4 @@ axes[1].set_xlabel("h")
 fig.suptitle("Monte-Carlo Histograms")
 
 plt.tight_layout()
-plt.show()
+# plt.show()

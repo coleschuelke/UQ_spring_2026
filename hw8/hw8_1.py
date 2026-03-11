@@ -8,7 +8,7 @@ def f(X):
 
 
 def grad_f(X):
-    return 2 * X**2
+    return 3 * X**2
 
 
 q_bar = 1
@@ -33,10 +33,10 @@ for i, s2 in enumerate(s2s):
     print(f"True Var(Y) = {var}\n")
 
     ## Plot
-    # kdex = np.linspace(min(reals), max(reals), 1000)
-    # kde = scipy.stats.gaussian_kde(reals)
-    # fig, ax = plt.subplots()
-    # ax.hist(reals, bins=500, density=True)
-    # ax.plot(kdex, kde(kdex))
+    kdex = np.linspace(min(reals), max(reals), 1000)
+    kde = scipy.stats.gaussian_kde(reals)
+    fig, ax = plt.subplots()
+    ax.hist(reals, bins=500, density=True)
+    ax.plot(kdex, kde(kdex))
 
 plt.show()

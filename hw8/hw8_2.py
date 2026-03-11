@@ -185,4 +185,17 @@ ax2.grid(True, linestyle="--", alpha=0.6)
 # Refine layout
 plt.tight_layout()
 
+# Corrected plot
+fig, ax = plt.subplots()
+ax.scatter(x_vals, residuals, label="Residuals", color="blue")
+ax.plot(x_vals, pred_int[:, 0] - Ts_mean, label="Prediction intervals", color="orange")
+ax.plot(x_vals, pred_int[:, 1] - Ts_mean, color="orange")
+ax.plot(x_vals, cred_int[:, 0] - Ts_mean, label="Credible intervals", color="red")
+ax.plot(x_vals, cred_int[:, 1] - Ts_mean, color="red")
+ax.hlines(0, x_vals[0], x_vals[-1], label=r"$T_s(x, \bar{q})$", color="black")
+ax.set_xlabel("x (m)")
+ax.set_ylabel(r"Temperature $(^{\circ}C)$")
+ax.legend()
+
+
 plt.show()
