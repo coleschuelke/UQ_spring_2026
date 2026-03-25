@@ -17,11 +17,16 @@ ax.set_ylabel("R")
 
 # Solving for the moments of u
 def mean_fun(q):
-    return np.exp(-q) * np.exp(-0.5 * q**2) / np.sqrt(2 * np.pi)
+    return np.exp(
+        -q
+    )  # * np.exp(-0.5 * q**2) / np.sqrt(2 * np.pi)  # Maybe don't need the dist here based on the equation for PCE for 2.6
+
+
+# Why do we not include the distribution? Isn't that the whole point of what we are trying integrate?????
 
 
 def var_fun(q):
-    return mean_fun(q**2) - mean_fun(q) ** 2
+    return mean_fun(2 * q) - mean_fun(q) ** 2
 
 
 points_phys, weights_phys = np.polynomial.hermite.hermgauss(10)
@@ -46,7 +51,7 @@ for R in range(1, 11):
     var_err = abs(var - var_true)
     errs[R - 1, :] = (mean_err, var_err)
 
-print(errs)
+print(errs)  # Why doesn't the estimate of the variance change? At all.
 
 fig, axes = plt.subplots(2, 1)
 axes[0].plot(errs[:, 0])

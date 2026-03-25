@@ -19,7 +19,9 @@ points = np.sqrt(2) * points_phys
 weights = 1 / np.sqrt(np.pi) * weights_phys
 polys = poly.hermitePoly(points, 5)
 
-EV22 = polys[1] ** 2 * np.exp(-0.5 * points**2) / np.sqrt(2 * np.pi) @ weights.T
+EV22 = (
+    polys[1] ** 2 @ weights.T
+)  # * np.exp(-0.5 * points**2) / np.sqrt(2 * np.pi) @ weights.T
 print(EV22)  # This is .141 not 1 as we would expect
 
 EV23 = polys[1] * polys[2] * np.exp(-0.5 * points**2) / np.sqrt(2 * np.pi) @ weights.T
