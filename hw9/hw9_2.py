@@ -1,5 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from utils import ASE379L_UQ_Polynomials as poly
 
 q = np.linspace(-4, 4, 1000)
@@ -39,8 +40,36 @@ Psi = polys.T
 U = np.linalg.inv(Psi.T @ Psi) @ Psi.T @ Y
 print(U)
 
+# PCE mean and variance
+print(f"The analytic mean is {np.exp(0.5)}")
+print(f"The PCE mean is {U[0]}")
+print(f"The analytic variance is {np.exp(2) - np.exp(1)}")
+print(f"The PCE variance is {sum(U**2)}")
+
+# Quadrature PCE
+u_analytic = np.zeros(11)
+points_phys, weights_phys = np.polynomial.hermite.hermgauss(20)
+
+points = np.sqrt(2) * points_phys
+weights = 1 / np.sqrt(np.pi) * weights_phys
+polys = poly.hermitePoly(points, 10)
+
+for k in range(11):
+    u_analytic[k] = np.exp(-points) * polys[k] @ weights.T
+
+print(u_analytic)
+
+print(f"The analytic mean is {np.exp(0.5)}")
+print(f"The PCE mean is {u_analytic[0]}")
+print(f"The analytic variance is {np.exp(2) - np.exp(1)}")
+print(f"The PCE variance is {sum(u_analytic**2)}")
+
+# Plotting
 fig, ax = plt.subplots()
 ax.plot(abs(U))
 ax.set_yscale("log")
 
+fig, ax = plt.subplots()
+ax.plot(abs(U))
+ax.set_yscale("log")
 plt.show()

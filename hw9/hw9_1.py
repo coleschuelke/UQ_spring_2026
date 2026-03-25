@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Weights for different values of R
 fig, ax = plt.subplots()
@@ -36,7 +36,6 @@ mean_true = np.exp(0.5)
 var_true = np.exp(2) - np.exp(1)
 errs = np.zeros((10, 2))
 for R in range(1, 11):
-
     points_phys, weights_phys = np.polynomial.hermite.hermgauss(R)
 
     points = np.sqrt(2) * points_phys
