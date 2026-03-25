@@ -43,11 +43,14 @@ Psi = polys.T
 U = np.linalg.inv(Psi.T @ Psi) @ Psi.T @ Y
 
 # PCE mean and variance
-print("------------------------- Least squares")
 print(f"The analytic mean is {np.exp(0.5)}")
-print(f"The PCE mean is {U[0]}")
 print(f"The analytic variance is {np.exp(2) - np.exp(1)}")
-print(f"The PCE variance is {sum(U[1:]**2)}")
+print("------------------------- Least squares")
+print(f"The PCE mean is {U[0]}. Error: {U[0] - np.exp(0.5)}")
+print(f"The analytic mean is {np.exp(0.5)}")
+print(
+    f"The PCE variance is {sum(U[1:]**2)}. Error: {sum(U[1:]**2)-np.exp(2) + np.exp(1)}"
+)
 
 # Quadrature PCE
 u_analytic = np.zeros(11)
@@ -62,10 +65,10 @@ for k in range(11):
 
 
 print("------------------------- Analytic Coefficients")
-print(f"The analytic mean is {np.exp(0.5)}")
-print(f"The PCE mean is {u_analytic[0]}")
-print(f"The analytic variance is {np.exp(2) - np.exp(1)}")
-print(f"The PCE variance is {sum(u_analytic[1:]**2)}")
+print(f"The PCE mean is {u_analytic[0]}. Error: {u_analytic[0] - np.exp(0.5)}")
+print(
+    f"The PCE variance is {sum(u_analytic[1:]**2)}. Error: {-sum(u_analytic[1:]**2) + np.exp(2) - np.exp(1)}"
+)
 
 # Plotting
 fig, ax = plt.subplots()

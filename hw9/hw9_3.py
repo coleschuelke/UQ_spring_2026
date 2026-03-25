@@ -18,7 +18,7 @@ y3 = data_3["outputs"]
 
 # Kernel
 def R(qi, qj):
-    theta = [0.5, 0.3, 0.3]
+    theta = [5, 5, 5]
     gamma = 1.5
     s = 0
     for k in range(3):
