@@ -56,3 +56,9 @@ def fs(q):
             + (r.T @ scriptR_inv @ one - 1) ** 2 / (one.T @ scriptR_inv @ one)
         )
         return (est, var)
+
+
+# Plotting
+q_lin = np.linspace(-5, 5, 1000)
+fig, ax = plt.subplots()
+ax.plot(q_lin, fs(q_lin))
