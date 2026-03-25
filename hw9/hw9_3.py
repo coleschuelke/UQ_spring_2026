@@ -14,8 +14,6 @@ q_vals1 = data_1["q_values"]
 y1 = data_1["outputs"]
 q_vals3 = data_3["q_values"]
 y3 = data_3["outputs"]
-print(q_vals3.shape)
-print(q_vals1.shape)
 
 
 # Kernel
@@ -39,26 +37,76 @@ for m in range(M):
 scriptR_inv = np.linalg.inv(scriptR)
 
 beta0 = np.linalg.inv(one.T @ scriptR_inv @ one) @ one.T @ scriptR_inv @ y
-s2 = 1 / M * (y - beta0 * one).T @ scriptR_inv @ (y - beta0 * one)
+s2 = (1 / M) * (y - beta0 * one).T @ scriptR_inv @ (y - beta0 * one)
 print(f"beta0 for this dataset is {beta0}")
 print(f"s2 for this dataset is {s2}")
 
 
 # The estimator
 def fs(q):
+    r = np.zeros((M, 1))
     for m in range(M):
-        r = np.zeros((M, 1))
         r[m] = R(q_vals[:, m], q)
-        est = beta0 + r.T @ scriptR_inv @ (y - beta0 * one)
-        var = s2 * (
-            1
-            - r.T @ scriptR_inv @ r
-            + (r.T @ scriptR_inv @ one - 1) ** 2 / (one.T @ scriptR_inv @ one)
-        )
-        return (est, var)
+    est = beta0 + r.T @ scriptR_inv @ (y - beta0 * one)
+    var = s2 * (
+        1
+        - r.T @ scriptR_inv @ r
+        + (r.T @ scriptR_inv @ one - 1) ** 2 / (one.T @ scriptR_inv @ one)
+    )
+    return np.array((est, var))
 
 
 # Plotting
-q_lin = np.linspace(-5, 5, 1000)
+q2 = np.array([-np.pi / 4] * 1000)
+q3 = np.array([np.pi / 4] * 1000)
+q_lin = np.linspace(-np.pi, np.pi, 1000)
+q_tot = np.array((q_lin, q2, q3))
+estvec = []
+varvec = []
+for i in range(1000):
+    est, var = fs(q_tot[:, i])
+    estvec.append(est)
+    varvec.append(var[0, 0])
 fig, ax = plt.subplots()
-ax.plot(q_lin, fs(q_lin))
+ax.plot(q_lin, np.array(estvec).flatten())
+ax.scatter(q_vals1[0, :], y1)
+ax.plot(
+    q_lin,
+    np.array(estvec).flatten() + 3 * np.sqrt(np.array(varvec).flatten()),
+    color="r",
+)
+ax.plot(
+    q_lin,
+    np.array(estvec).flatten() - 3 * np.sqrt(np.array(varvec).flatten()),
+    color="r",
+)
+ax.set_xlabel("q1")
+ax.set_ylabel("u(1, q)")
+
+q1 = np.array([np.pi / 4] * 1000)
+q2 = np.array([-np.pi / 4] * 1000)
+q_lin = np.linspace(-np.pi, np.pi, 1000)
+q_tot = np.array((q1, q2, q_lin))
+estvec = []
+varvec = []
+for i in range(1000):
+    est, var = fs(q_tot[:, i])
+    estvec.append(est)
+    varvec.append(var)
+fig, ax = plt.subplots()
+ax.plot(q_lin, np.array(estvec).flatten())
+ax.scatter(q_vals3[2, :], y3)
+ax.plot(
+    q_lin,
+    np.array(estvec).flatten() + 3 * np.sqrt(np.array(varvec).flatten()),
+    color="r",
+)
+ax.plot(
+    q_lin,
+    np.array(estvec).flatten() - 3 * np.sqrt(np.array(varvec).flatten()),
+    color="r",
+)
+ax.set_xlabel("q3")
+ax.set_ylabel("u(1, q)")
+
+plt.show()
