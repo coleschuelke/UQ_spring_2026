@@ -1,15 +1,19 @@
-import numpy as np
+from math import factorial
+
 import matplotlib.pyplot as plt
+import numpy as np
+from aux import HestonModel, generate_multi_indices
+from matplotlib.cbook import print_cycles
 from scipy.stats.qmc import LatinHypercube, scale
+
+from hw9.hw9_2 import k
 from utils import ASE379L_UQ_PCE as pce
 from utils import ASE379L_UQ_Polynomials as poly
 
-from aux import HestonModel
-
 # Control
 Nsamps = 10  # Number of function evaluations to fit the PCE
-K_pce = 0  # Order of the PCE (Should be able to justify this)
-
+d = 5  # Order of the multivariate PCE (Should be able to justify this) (Start small for now)
+p = 4  # Dimension of the input
 
 S0 = 100  # Initial price of the asset
 T = 1  # Time at which the asset price is being predicted
@@ -34,14 +38,37 @@ scaled_samps = scale(
     raw_samps, lower_bounds, upper_bounds
 )  # Map the uniform to proper ranges
 
-# Evaluate the option price using the closed-form solution to the Heston model
-evals = np.zeros((Nsamps, 4))
+# Evaluate the model using the closed-form solution to the Heston model
+prices = np.zeros((Nsamps, 4))
 for ii in range(Nsamps):
-    evals[ii, :] = model.price(*(scaled_samps[ii, :]))
+    prices[ii, :] = model.price(
+        *(scaled_samps[ii, :])
+    )  # WARN: this is not fully working
 
 # Fit the PCE using least squares
+# Create multi-indices
+K_idx = generate_multi_indices(4, d)
+magK = len(K_idx)
+P = np.zeros((d + 1, p, Nsamps))
+# WARN: Double check that these are supposed to be legendre
+kappa_polys = poly.legendrePoly(scaled_samps[:, 0], d)
+theta_polys = poly.legendrePoly(scaled_samps[:, 1], d)
+sig_polys = poly.legendrePoly(scaled_samps[:, 2], d)
+rho_polys = poly.legendrePoly(scaled_samps[:, 3], d)
+P[:, 0, :] = kappa_polys
+P[:, 1, :] = theta_polys
+P[:, 2, :] = sig_polys
+P[:, 3, :] = rho_polys
 
-# Fit the PCE using quadrature
+# This is close but I'm not sure it's perfect
+Psi = np.ones((Nsamps, magK))
+for ii in range(magK):
+    for jj in range(p):
+        Psi[:, ii] = Psi[:, ii] * P[K_idx(ii, jj) + 1, jj, :]
+
+
+# Fit the PCE using cubature
+
 
 # Calculate the Sobol indices
 

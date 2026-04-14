@@ -1,3 +1,5 @@
+from itertools import combinations
+
 import numpy as np
 from scipy.integrate import quad
 
@@ -61,3 +63,22 @@ class HestonModel:
         C0 = self.S0 * PI1 - np.exp(-self.r * self.T) * self.K * PI2
 
         return C0
+
+
+def generate_multi_indices(p, d):
+    indices = []
+    # Loop through each total degree 's' from 0 to d
+    for s in range(d + 1):
+        # Using combinations to find 'bar' positions for sum 's'
+        # This is the 'Stars and Bars' logic for p bins
+        for combo in combinations(range(s + p - 1), p - 1):
+            idx = np.zeros(p, dtype=int)
+            prev = -1
+            for i, c in enumerate(combo):
+                idx[i] = c - prev - 1
+                prev = c
+            idx[p - 1] = s + p - 2 - prev
+            # Flip to match the 'left-heavy' convention on Slide 12
+            indices.append(idx[::-1])
+
+    return np.array(indices)
