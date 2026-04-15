@@ -1,12 +1,11 @@
+from itertools import product
 from math import factorial
 
 import matplotlib.pyplot as plt
 import numpy as np
 from aux import HestonModel, generate_multi_indices
-from matplotlib.cbook import print_cycles
 from scipy.stats.qmc import LatinHypercube, scale
 
-from hw9.hw9_2 import k
 from utils import ASE379L_UQ_PCE as pce
 from utils import ASE379L_UQ_Polynomials as poly
 
@@ -68,7 +67,24 @@ for ii in range(magK):
 
 
 # Fit the PCE using cubature
+# Generate the 1D rules
+# Standardized weights
+points_phys_std, weights_phys_std = np.polynomial.legendre.leggauss(d + 1)
+points_std = np.sqrt(2) * points_phys_std
+weights = 1 / np.sqrt(np.pi) * weights_phys_std
+polys = poly.legendrePoly(points_std, d)
+grid_points_std = np.array(list(product(points_std, repeat=p)))
+grid_weights_std = np.array([np.prod(w) for w in product(weights_std, repeat=p)])
+# Map the grid into the scaled space
+grid_points_scaled = np.zeros_like(grid_points_std)
+for i in range(p):
+    grid_points_scaled[:, i] = (grid_points_std[:, i] + 1) * (
+        upper_bounds[i] - lower_bounds[i]
+    )
 
+price_grid = np.array([model.price(*pt) for pt in grid_points_scaled])
+
+# Calculate the cubature
 
 # Calculate the Sobol indices
 
