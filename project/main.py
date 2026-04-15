@@ -9,7 +9,7 @@ from utils import ASE379L_UQ_PCE as pce
 from utils import ASE379L_UQ_Polynomials as poly
 
 # Control
-Nsamps = 10  # Number of function evaluations to fit the PCE
+Nsamps = 500  # Number of function evaluations to fit the PCE
 d = 5  # Order of the multivariate PCE (Should be able to justify this) (Start small for now)
 p = 4  # Dimension of the input
 
@@ -17,9 +17,9 @@ more_than_example = True
 
 S0 = 100  # Initial price of the asset
 T = 1  # Time at which the asset price is being predicted
-K = 110
 V0 = 0.04
 r = 0.03
+K = S0 * np.exp(r * T)
 
 # Create the model
 model = HestonModel(S0, T, K, V0, r)
@@ -29,8 +29,8 @@ print(example)
 
 if more_than_example:
     # Set up the input variables
-    lower_bounds = [0.5, 0.01, 0.1, -0.9]
-    upper_bounds = [4, 0.1, 0.6, -0.2]
+    lower_bounds = [0.5, 0.03, 0.1, -0.9]
+    upper_bounds = [4, 0.05, 0.6, -0.2]
 
     # Sample the input variables using LHS and scale
     sampler = LatinHypercube(d=p)
@@ -52,6 +52,8 @@ if more_than_example:
     Psi_ls = build_Psi_uni(poly_samps, K_idx, d)  # WARN: need to check on this
 
     u_k_ls, _, _, _ = np.linalg.lstsq(Psi_ls, prices, rcond=None)
+
+    print(f"The least square mean is {u_k_ls[0]}")
 
     # Fit the PCE using cubature
     points_std, weights_std = np.polynomial.legendre.leggauss(d + 1)
@@ -80,6 +82,39 @@ if more_than_example:
 
     u_k_cub = (1.0 / gamma_multi) * (Psi_cub.T @ weighted_prices)
 
-    # Calculate the Sobol indices
+    print(f"The cubature mean is {u_k_cub[0]}")
+    print(f"The MC mean is {np.mean(prices)}")
+
+    # Sobol indices
+    print("-------- Least Squares --------")
+    # Total variance (sum of weighted squares for all non-mean terms)
+    ls_term_variances = gamma_multi[1:] * (u_k_ls[1:] ** 2)
+    ls_total_var = np.sum(ls_term_variances)
+
+    ls_sobol_total = np.zeros(p)
+    for i in range(p):
+        # Mask to find every multi-index where dimension i is 'active' (degree > 0)
+        mask = K_idx[1:, i] > 0
+        ls_sobol_total[i] = np.sum(ls_term_variances[mask]) / ls_total_var
+
+    # Print sensitivity results
+    labels = ["kappa", "theta", "sig_v", "rho"]
+    for label, s_val in zip(labels, ls_sobol_total):
+        print(f"Total Sensitivity (S_T) for {label} (LS): {s_val:.4f}")
+
+    print("-------- Cubature --------")
+    cub_term_variances = gamma_multi[1:] * (u_k_cub[1:] ** 2)
+    cub_total_var = np.sum(cub_term_variances)
+
+    cub_sobol_total = np.zeros(p)
+    for i in range(p):
+        # Mask to find every multi-index where dimension i is 'active' (degree > 0)
+        mask = K_idx[1:, i] > 0
+        cub_sobol_total[i] = np.sum(cub_term_variances[mask]) / cub_total_var
+
+    # Print sensitivity results
+    labels = ["kappa", "theta", "sig_v", "rho"]
+    for label, s_val in zip(labels, cub_sobol_total):
+        print(f"Total Sensitivity (S_T) for {label} (cubature): {s_val:.4f}")
 
     # Compare with market data?
