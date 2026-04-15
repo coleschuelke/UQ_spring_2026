@@ -13,7 +13,7 @@ Nsamps = 500  # Number of function evaluations to fit the PCE
 d = 5  # Order of the multivariate PCE (Should be able to justify this) (Start small for now)
 p = 4  # Dimension of the input
 
-more_than_example = True
+run_full = True
 
 S0 = 100  # Initial price of the asset
 T = 1  # Time at which the asset price is being predicted
@@ -24,13 +24,15 @@ K = S0 * np.exp(r * T)
 # Create the model
 model = HestonModel(S0, T, K, V0, r)
 
-example = model.price(2, 0.04, 0.3, -0.7)  # Verifies that the model is working properly
+example = model.price(2, 0.04, 0.3, -0.7)  # Verify that the model is working properly
 print(example)
 
-if more_than_example:
+if run_full:
     # Set up the input variables
     lower_bounds = [0.5, 0.03, 0.1, -0.9]
     upper_bounds = [4, 0.05, 0.6, -0.2]
+
+    # -------- Least squares PCE generation --------
 
     # Sample the input variables using LHS and scale
     sampler = LatinHypercube(d=p)
@@ -40,7 +42,7 @@ if more_than_example:
     )  # Map the uniform to proper range for standard polynomials
     scaled_samps = scale(raw_samps, lower_bounds, upper_bounds)
 
-    # Evaluate the model using the closed-form solution to the Heston model
+    # Evaluate the Heston model using the closed-form solution
     prices = np.zeros(Nsamps)
     for ii in range(Nsamps):
         prices[ii] = model.price(*(scaled_samps[ii]))
@@ -55,13 +57,15 @@ if more_than_example:
 
     print(f"The least square mean is {u_k_ls[0]}")
 
-    # Fit the PCE using cubature
+    # -------- Cubature PCE generation --------
+    # Extract the Legendre polynomial points
     points_std, weights_std = np.polynomial.legendre.leggauss(d + 1)
     weights_std /= 2
     polys = poly.legendrePoly(points_std, d)
     grid_points_std = np.array(list(product(points_std, repeat=p)))
     grid_weights_std = np.array([np.prod(w) for w in product(weights_std, repeat=p)])
 
+    # Build the Psi matrix (normalized)
     Psi_cub = build_Psi_uni(grid_points_std, K_idx, d)
 
     # Map the grid into the scaled space
