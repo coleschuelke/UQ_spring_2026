@@ -67,10 +67,8 @@ class HestonModel:
 
 def generate_multi_indices(p, d):
     indices = []
-    # Loop through each total degree 's' from 0 to d
+    # Loop through each total degree from 0 to d
     for s in range(d + 1):
-        # Using combinations to find 'bar' positions for sum 's'
-        # This is the 'Stars and Bars' logic for p bins
         for combo in combinations(range(s + p - 1), p - 1):
             idx = np.zeros(p, dtype=int)
             prev = -1
@@ -78,7 +76,7 @@ def generate_multi_indices(p, d):
                 idx[i] = c - prev - 1
                 prev = c
             idx[p - 1] = s + p - 2 - prev
-            # Flip to match the 'left-heavy' convention on Slide 12
+            # Flip to match convention
             indices.append(idx[::-1])
 
     return np.array(indices)
@@ -92,17 +90,16 @@ def build_Psi_uni(samps_std, K_idx, d):
     N, p = samps_std.shape
     magK = len(K_idx)
 
-    # 1. Precompute Univariate Tensor (Slide 24)
+    # Compute Univariate Tensor
     # Shape: (degree, dimension, realization)
     P = np.zeros((d + 1, p, N))
     for dim in range(p):
         P[:, dim, :] = poly.legendrePoly(samps_std[:, dim], d)
 
-    # 2. Build Multivariate Psi
+    # Build Multivariate Psi
     Psi = np.ones((N, magK))
     for k in range(magK):
         for dim in range(p):
             deg = K_idx[k, dim]
-            # Use 0-based indexing for Python
             Psi[:, k] *= P[deg, dim, :]
     return Psi
