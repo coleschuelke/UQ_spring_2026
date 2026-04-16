@@ -46,16 +46,18 @@ if run_full:
     prices = np.zeros(Nsamps)
     for ii in range(Nsamps):
         prices[ii] = model.price(*(scaled_samps[ii]))
-    # Fit the PCE using least squares
+
     # Create multi-indices
     K_idx = generate_multi_indices(4, d)
     magK = len(K_idx)
 
-    Psi_ls = build_Psi_uni(poly_samps, K_idx, d)  # WARN: need to check on this
+    # Build the Psi matrix for the LS problem
+    Psi_ls = build_Psi_uni(poly_samps, K_idx, d)
 
+    # Solve the LS problem
     u_k_ls, _, _, _ = np.linalg.lstsq(Psi_ls, prices, rcond=None)
 
-    print(f"The least square mean is {u_k_ls[0]}")
+    print(f"The LS mean is {u_k_ls[0]}")
 
     # -------- Cubature PCE generation --------
     # Extract the Legendre polynomial points
