@@ -39,7 +39,7 @@ if run_full:
     raw_samps = sampler.random(n=Nsamps)  # Draw the uniforms samples [0, 1)
     poly_samps = (
         raw_samps * 2 - 1
-    )  # Map the uniform to proper range for standard polynomials
+    )  # Map the uniform to proper range for standard polynomials (-1, 1)
     scaled_samps = scale(raw_samps, lower_bounds, upper_bounds)
 
     # Evaluate the Heston model using the closed-form solution
